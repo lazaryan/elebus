@@ -1,0 +1,49 @@
+{
+  "name": "elebus",
+  "version": "0.0.1",
+  "license": "MIT",
+  "author": "Sergey Lazaryan (https://github.com/lazaryan)",
+  "homepage": "https://github.com/lazaryan/elebus",
+  "bugs": "https://github.com/lazaryan/elebus/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lazaryan/elebus.git"
+  },
+  "description": "eventBus for web and multi windows electron apps",
+  "keywords": [
+    "eventBus",
+    "signals",
+    "electron",
+    "reactive",
+    "typescript",
+    "javascript"
+  ],
+  "engines": {
+    "node": ">=12"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "jsnext:main": "dist/esm/index.js",
+  "unpkg": "dist/umd/index.js",
+  "umd:main": "dist/umd/index.js",
+  "browser": "dist/browser/index.js",
+  "react-native": "dist/browser/index.js",
+  "types": "dist/esm/index.d.ts",
+  "source": "src/index.ts",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "docs",
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "shx rm -rf dist lib",
+    "build": "npm run build:cjs && npm run build:esm && npm run build:rollup",
+    "build:cjs": "tsc -p tsconfig.build.json --outDir dist/cjs --module commonjs",
+    "build:esm": "tsc -p tsconfig.build.json --outDir dist/esm --module es2015",
+    "build:rollup": "rollup -c",
+    "typedoc": "typedoc"
+  }
+}
