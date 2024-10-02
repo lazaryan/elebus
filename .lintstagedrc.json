@@ -1,9 +1,6 @@
 {
-  "{packages,scripts}/**/*.{ts,tsx}": [
-    "eslint --max-warnings 0 --fix",
-    "prettier --write"
-  ],
-  "*.{css,json,md,html,yml}": [
+  "src/**/*.ts": [
+    "eslint --fix",
     "prettier --write"
   ]
 }
