@@ -41,7 +41,6 @@ export default [
           ],
           pathGroups: [
             {
-              pattern: 'react',
               group: 'external',
               position: 'before',
             },

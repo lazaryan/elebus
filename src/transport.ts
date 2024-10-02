@@ -1,4 +1,4 @@
-import { EventLike, Unscubscriber } from './types';
+import { EventLike, Unscubscriber, TransportBaseImpl } from './types';
 import { TransportNode } from './transportNode';
 
 type Subscribers = Map<string, Set<(...args: any) => void>>;
@@ -10,7 +10,7 @@ async function flushMicrotasks(timeout = 0): Promise<void> {
   );
 }
 
-export class Transport<EVENTS extends EventLike> {
+export class Transport<EVENTS extends EventLike> implements TransportBaseImpl {
   private __subscribers: Subscribers = new Map();
   private __subscribersOnce: Subscribers = new Map();
 
@@ -43,7 +43,7 @@ export class Transport<EVENTS extends EventLike> {
 
   private __subscribe<
     EVENT_TYPE extends string & (keyof EVENTS | '*'),
-    EVENT extends EVENT_TYPE extends '*' ? keyof EVENTS : EVENT_TYPE,
+    EVENT extends EVENT_TYPE extends '*' ? string & keyof EVENTS : EVENT_TYPE,
     CB extends {
       [TYPE in EVENT]: [TYPE, EVENTS[TYPE]];
     },
