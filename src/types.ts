@@ -4,7 +4,7 @@ export type Unscubscriber = () => void;
 
 type BaseCallback = (type: string, payload?: any) => void;
 
-export interface TransportBaseImpl {
+export interface TransportRootImpl {
   on(type: string, callback: BaseCallback): Unscubscriber;
   once(type: string, callback: BaseCallback): Unscubscriber;
   off(type: string, callback: BaseCallback): void;

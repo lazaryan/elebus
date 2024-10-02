@@ -1,4 +1,4 @@
-import { EventLike, Unscubscriber, TransportBaseImpl } from './types';
+import { EventLike, Unscubscriber, TransportRootImpl } from './types';
 import { TransportNode } from './transportNode';
 
 type Subscribers = Map<string, Set<(...args: any) => void>>;
@@ -10,7 +10,9 @@ async function flushMicrotasks(timeout = 0): Promise<void> {
   );
 }
 
-export class Transport<EVENTS extends EventLike> implements TransportBaseImpl {
+function noopFunction(): void {}
+
+export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   private __subscribers: Subscribers = new Map();
   private __subscribersOnce: Subscribers = new Map();
 
@@ -29,7 +31,7 @@ export class Transport<EVENTS extends EventLike> implements TransportBaseImpl {
     if (subscribersOnce) {
       subscribersOnce.delete(callback);
       if (!subscribersOnce.size) {
-        this.__subscribers.delete(type);
+        this.__subscribersOnce.delete(type);
       }
     }
 
@@ -52,7 +54,7 @@ export class Transport<EVENTS extends EventLike> implements TransportBaseImpl {
     type: EVENT_TYPE,
     callback: (...args: CB[EVENT]) => void,
   ): Unscubscriber {
-    if (this.__isDestroyed) return () => {};
+    if (this.__isDestroyed) return noopFunction;
 
     const subscribers = store.get(type);
     if (subscribers) {
