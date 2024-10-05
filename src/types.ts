@@ -1,3 +1,5 @@
+import { TransportNodeImpl } from './nodes/types';
+
 export type EventLike = Record<string, unknown>;
 
 export type Unscubscriber = () => void;
@@ -15,6 +17,8 @@ export interface TransportRootImpl {
   subscribe(type: string, callback: BaseCallback): Unscubscriber;
   subscribeOnce(type: string, callback: BaseCallback): Unscubscriber;
   unscubscribe(type: string, callback: BaseCallback): void;
+
+  asReadonly(): TransportNodeImpl;
 
   destroy(): void;
 }

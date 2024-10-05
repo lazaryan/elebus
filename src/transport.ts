@@ -1,5 +1,5 @@
-import { EventLike, Unscubscriber, TransportRootImpl } from './types';
-import { TransportNode } from './transportNode';
+import { BaseNode } from './nodes/baseNode';
+import type { EventLike, Unscubscriber, TransportRootImpl } from './types';
 
 type Subscribers = Map<string, Set<(...args: any) => void>>;
 type SendOptions = { sync?: boolean };
@@ -125,11 +125,11 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   public send = this.__send;
   public emit = this.__send;
 
-  public asReadonly(): TransportNode<EVENTS, ''> {
+  public asReadonly(): BaseNode<EVENTS, ''> {
     const children = new Map();
     children.set('', new Set([this]));
 
-    return new TransportNode({ children });
+    return new BaseNode({ children });
   }
 
   public destroy() {
