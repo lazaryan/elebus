@@ -1,5 +1,5 @@
 import { BaseNode } from './nodes/baseNode';
-import type { EventLike, Unscubscriber, TransportRootImpl } from './types';
+import type { EventLike, TransportRootImpl, Unscubscriber } from './types';
 
 type Subscribers = Map<string, Set<(...args: any) => void>>;
 type SendOptions = { sync?: boolean };

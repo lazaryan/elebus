@@ -1,7 +1,7 @@
-import { EventLike, Unscubscriber, TransportRootImpl } from '../../types';
 import { Transport } from '../../transport';
-
+import { EventLike, TransportRootImpl, Unscubscriber } from '../../types';
 import { TransportNodeImpl } from '../types';
+
 import { getSubscribers } from './utils';
 
 type MergeNamespaceAndTypeName<
@@ -187,7 +187,7 @@ export class BaseNode<EVENTS extends EventLike, NAMESPACES extends string = ''>
             } else {
               const self = this;
 
-              function subscriber(type: string, payload?: any) {
+              function subscriber(type: string, payload?: any): void {
                 const newEvent = `${namespace}:${type}`;
 
                 self.__subscribers

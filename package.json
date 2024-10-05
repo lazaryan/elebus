@@ -9,8 +9,10 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "npm-run-all lint:*",
-    "lint:eslint": "eslint --cache --max-warnings 0",
-    "lint:tsc": "tsc -p tsconfig.json --noEmit"
+    "lint:eslint": "npm run eslint",
+    "lint:tsc": "tsc -p tsconfig.json --noEmit",
+    "eslint": "eslint --cache --max-warnings 0 \"src/**\"",
+    "test": "jest"
   },
   "dependencies": {
     "vite-plugin-dts": "4.2.3"
@@ -21,6 +23,7 @@
     "@typescript-eslint/parser": "8.8.0",
     "eslint": "8.57.1",
     "eslint-config-standard": "17.1.0",
+    "eslint-plugin-eslint-comments": "3.2.0",
     "eslint-plugin-import": "2.30.0",
     "eslint-plugin-jest": "28.8.3",
     "eslint-plugin-n": "16.6.2",
