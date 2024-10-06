@@ -28,6 +28,8 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     type: EVENT_TYPE,
     callback: (...args: any) => void,
   ): void {
+    if (this.__isDestroyed) return;
+
     const subscribers = this.__subscribers.get(type);
     const subscribersOnce = this.__subscribersOnce.get(type);
     if (!subscribers && !subscribersOnce) return;
@@ -138,14 +140,15 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
 
   public destroy() {
     if (this.__isDestroyed) return;
-
     this.__isDestroyed = true;
 
-    this.__subscribersOnce.forEach((subscribers) => subscribers.clear());
-    this.__subscribersOnce.clear();
+    setTimeout(() => {
+      this.__subscribersOnce.forEach((subscribers) => subscribers.clear());
+      this.__subscribersOnce.clear();
 
-    this.__subscribers.forEach((subscribers) => subscribers.clear());
-    this.__subscribers.clear();
+      this.__subscribers.forEach((subscribers) => subscribers.clear());
+      this.__subscribers.clear();
+    }, 0);
   }
 }
 
