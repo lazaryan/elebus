@@ -20,6 +20,10 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
 
   static defaultSendOptions: SendOptions = { sync: false };
 
+  public get isDestroyed() {
+    return this.__isDestroyed;
+  }
+
   private __unsubscribe<EVENT_TYPE extends string & (keyof EVENTS | '*')>(
     type: EVENT_TYPE,
     callback: (...args: any) => void,

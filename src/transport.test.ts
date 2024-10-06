@@ -6,12 +6,15 @@ describe('smoke tests', () => {
   });
   it('destroy transport', () => {
     const transport = createTransport();
+    expect(transport.isDestroyed).toBeFalsy();
     expect(transport.destroy.bind(transport)).not.toThrow();
+    expect(transport.isDestroyed).toBeTruthy();
   });
   it('subscribe', () => {
     const transport = createTransport();
     expect(transport.on.bind(transport, '*', () => {})).not.toThrow();
     expect(transport.destroy.bind(transport)).not.toThrow();
+    expect(transport.isDestroyed).toBeTruthy();
   });
   it('unsubscribe', () => {
     const transport = createTransport();
@@ -19,6 +22,7 @@ describe('smoke tests', () => {
     transport.on('*', action);
     expect(transport.off.bind(transport, '*', action)).not.toThrow();
     expect(transport.destroy.bind(transport)).not.toThrow();
+    expect(transport.isDestroyed).toBeTruthy();
   });
   it('send', async () => {
     const transport = createTransport<{ '': undefined }>();
