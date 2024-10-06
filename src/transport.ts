@@ -125,11 +125,9 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   public removeEventListener = this.off;
 
   public subscribe = this.on;
-  public subscribeOnce = this.once;
   public unscubscribe = this.off;
 
   public send = this.__send;
-  public emit = this.__send;
 
   public asReadonly(): BaseNode<EVENTS, ''> {
     const children = new Map();

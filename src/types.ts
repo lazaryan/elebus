@@ -18,6 +18,8 @@ export interface TransportRootImpl {
   subscribeOnce(type: string, callback: BaseCallback): Unscubscriber;
   unscubscribe(type: string, callback: BaseCallback): void;
 
+  send(type: string, ...other: any[]): Promise<void>;
+
   asReadonly(): TransportNodeImpl;
 
   destroy(): void;
