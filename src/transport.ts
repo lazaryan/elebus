@@ -110,9 +110,11 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
         this.__subscribersOnce.get('*')?.clear();
         this.__subscribersOnce.delete(type);
       }
-      for (const subscriber of subscribers) {
-        await flushMicrotasks();
-        subscriber(type, payload);
+      if (subscribers) {
+        for (const subscriber of subscribers) {
+          await flushMicrotasks();
+          subscriber(type, payload);
+        }
       }
     }
   }
