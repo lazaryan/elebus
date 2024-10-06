@@ -15,7 +15,6 @@ export interface TransportRootImpl {
   removeEventListener(type: string, callback: BaseCallback): void;
 
   subscribe(type: string, callback: BaseCallback): Unscubscriber;
-  subscribeOnce(type: string, callback: BaseCallback): Unscubscriber;
   unscubscribe(type: string, callback: BaseCallback): void;
 
   send(type: string, ...other: any[]): Promise<void>;
