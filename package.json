@@ -3,6 +3,16 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "license": "MIT",
+  "author": "Sergey Lazaryan (https://github.com/lazaryan)",
+  "homepage": "https://github.com/lazaryan/elebus",
+  "bugs": "https://github.com/lazaryan/elebus/issues",
+  "repository": "github:lazaryan/elebus",
+  "keywords": [
+    "eventBus",
+    "signals",
+    "transport"
+  ],
   "scripts": {
     "prepare": "husky install",
     "dev": "vite",
@@ -13,9 +23,6 @@
     "lint:tsc": "tsc -p tsconfig.json --noEmit",
     "eslint": "eslint --cache --max-warnings 0 \"src/**\"",
     "test": "jest"
-  },
-  "dependencies": {
-    "vite-plugin-dts": "4.2.3"
   },
   "devDependencies": {
     "@types/jest": "29.5.13",
@@ -35,6 +42,7 @@
     "prettier": "3.3.3",
     "ts-jest": "29.2.5",
     "typescript": "^5.5.3",
-    "vite": "^5.4.1"
+    "vite": "^5.4.1",
+    "vite-plugin-dts": "4.2.3"
   }
 }
