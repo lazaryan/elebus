@@ -102,18 +102,18 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
       subscribers?.forEach((subscriber) => subscriber(type, payload));
     } else {
       if (subscribersOnce) {
-        subscribersOnce.forEach(async (subscriber) => {
+        for (const subscriber of subscribersOnce) {
           await flushMicrotasks();
           subscriber(type, payload);
-        });
+        }
         this.__subscribersOnce.get(type)?.clear();
         this.__subscribersOnce.get('*')?.clear();
         this.__subscribersOnce.delete(type);
       }
-      subscribers?.forEach(async (subscriber) => {
+      for (const subscriber of subscribers) {
         await flushMicrotasks();
         subscriber(type, payload);
-      });
+      }
     }
   }
 
