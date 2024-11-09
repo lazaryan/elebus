@@ -6,13 +6,25 @@ type Subscribers = Map<string, Set<(...args: any) => void>>;
 export type SendOptions = { sync?: boolean };
 
 export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
+  /**
+   * @internal
+   */
   private __subscribers: Subscribers = new Map();
+  /**
+   * @internal
+   */
   private __subscribersOnce: Subscribers = new Map();
 
+  /**
+   * @internal
+   */
   private __isDestroyed = false;
 
   static defaultSendOptions: SendOptions = { sync: false };
 
+  /**
+   * @internal
+   */
   private __unsubscribeForStore<
     EVENT_TYPE extends string & (keyof EVENTS | '*'),
   >(
@@ -31,6 +43,9 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     }
   }
 
+  /**
+   * @internal
+   */
   private __unsubscribe<EVENT_TYPE extends string & (keyof EVENTS | '*')>(
     type: EVENT_TYPE,
     callback: (...args: any) => void,
@@ -41,6 +56,9 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     this.__unsubscribeForStore(this.__subscribers, type, callback);
   }
 
+  /**
+   * @internal
+   */
   private __subscribe<
     EVENT_TYPE extends string & (keyof EVENTS | '*'),
     EVENT extends EVENT_TYPE extends '*' ? string & keyof EVENTS : EVENT_TYPE,
@@ -64,6 +82,9 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     return () => this.__unsubscribeForStore(store, type, callback);
   }
 
+  /**
+   * @internal
+   */
   private async __send<
     TYPE extends string & keyof EVENTS,
     PARAMETERS extends EVENTS[TYPE] extends undefined | null

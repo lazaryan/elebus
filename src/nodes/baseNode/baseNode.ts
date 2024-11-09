@@ -46,16 +46,31 @@ type Subscribers = Map<SubscribeEvent, Subscriber>;
 export class BaseNode<EVENTS extends EventLike, NAMESPACES extends string = ''>
   implements NodeImpl
 {
+  /**
+   * @internal
+   */
   private __roots: BaseNodeChildren<NAMESPACES> = new Map();
 
+  /**
+   * @internal
+   */
   private __subscribers: Subscribers = new Map();
+  /**
+   * @internal
+   */
   private __subscribersOnce: Subscribers = new Map();
+  /**
+   * @internal
+   */
   private __isDestroyed = false;
 
   constructor(props?: BaseNodeProps<NAMESPACES>) {
     this.__roots = props?.children ?? new Map();
   }
 
+  /**
+   * @internal
+   */
   private __subscribe<
     EVENT_TYPE extends string & (keyof EVENTS | '*'),
     EVENT extends EVENT_TYPE extends '*' ? string & keyof EVENTS : EVENT_TYPE,
@@ -144,6 +159,9 @@ export class BaseNode<EVENTS extends EventLike, NAMESPACES extends string = ''>
     };
   }
 
+  /**
+   * @internal
+   */
   private __unsubscribe<EVENT_TYPE extends string & (keyof EVENTS | '*')>(
     type: EVENT_TYPE,
     callback: (...args: any[]) => void,
