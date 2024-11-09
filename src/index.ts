@@ -1,2 +1,3 @@
 export type { EventLike, Unscubscriber } from './types';
-export { type Transport, createTransport } from './transport';
+export { type Transport, type SendOptions } from './transport';
+export { createTransport } from './helpers';

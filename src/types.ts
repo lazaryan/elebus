@@ -1,12 +1,10 @@
-import { TransportNodeImpl } from './nodes/types';
-
 export type EventLike = Record<string, unknown>;
 
 export type Unscubscriber = () => void;
 
 type BaseCallback = (type: string, payload?: any) => void;
 
-export interface TransportRootImpl {
+export interface ReadableNodeImpl {
   on(type: string, callback: BaseCallback): Unscubscriber;
   once(type: string, callback: BaseCallback): Unscubscriber;
   off(type: string, callback: BaseCallback): void;
@@ -17,9 +15,15 @@ export interface TransportRootImpl {
   subscribe(type: string, callback: BaseCallback): Unscubscriber;
   unscubscribe(type: string, callback: BaseCallback): void;
 
+  destroy(): void;
+}
+
+export interface NodeImpl extends ReadableNodeImpl {
+  getWatchedTransports: () => Readonly<Map<string, Set<ReadableNodeImpl>>>;
+}
+
+export interface TransportRootImpl extends ReadableNodeImpl {
   send(type: string, ...other: any[]): Promise<void>;
 
-  asReadonly(): TransportNodeImpl;
-
-  destroy(): void;
+  asReadonly(): ReadableNodeImpl;
 }

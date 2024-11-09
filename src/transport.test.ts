@@ -1,4 +1,4 @@
-import { createTransport } from './transport';
+import { createTransport } from './helpers';
 
 describe('smoke tests', () => {
   it('init transport', () => {

@@ -1,16 +1,9 @@
 import { BaseNode } from './nodes/baseNode';
 import type { EventLike, TransportRootImpl, Unscubscriber } from './types';
+import { flushMicrotasks, noopFunction } from './utils';
 
 type Subscribers = Map<string, Set<(...args: any) => void>>;
-type SendOptions = { sync?: boolean };
-
-async function flushMicrotasks(timeout = 0): Promise<void> {
-  return await new Promise((resolve) =>
-    setTimeout(() => resolve(undefined), timeout),
-  );
-}
-
-function noopFunction(): void {}
+export type SendOptions = { sync?: boolean };
 
 export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   private __subscribers: Subscribers = new Map();
@@ -20,8 +13,22 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
 
   static defaultSendOptions: SendOptions = { sync: false };
 
-  public get isDestroyed() {
-    return this.__isDestroyed;
+  private __unsubscribeForStore<
+    EVENT_TYPE extends string & (keyof EVENTS | '*'),
+  >(
+    store: Subscribers,
+    type: EVENT_TYPE,
+    callback: (...args: any) => void,
+  ): void {
+    if (this.__isDestroyed) return;
+
+    const subscribers = store.get(type);
+    if (!subscribers || !subscribers.size) return;
+
+    subscribers.delete(callback);
+    if (!subscribers.size) {
+      store.delete(type);
+    }
   }
 
   private __unsubscribe<EVENT_TYPE extends string & (keyof EVENTS | '*')>(
@@ -30,23 +37,8 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   ): void {
     if (this.__isDestroyed) return;
 
-    const subscribers = this.__subscribers.get(type);
-    const subscribersOnce = this.__subscribersOnce.get(type);
-    if (!subscribers && !subscribersOnce) return;
-
-    if (subscribersOnce) {
-      subscribersOnce.delete(callback);
-      if (!subscribersOnce.size) {
-        this.__subscribersOnce.delete(type);
-      }
-    }
-
-    if (subscribers) {
-      subscribers.delete(callback);
-      if (!subscribers.size) {
-        this.__subscribers.delete(type);
-      }
-    }
+    this.__unsubscribeForStore(this.__subscribersOnce, type, callback);
+    this.__unsubscribeForStore(this.__subscribers, type, callback);
   }
 
   private __subscribe<
@@ -69,7 +61,7 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
       store.set(type, new Set([callback]));
     }
 
-    return () => this.__unsubscribe(type, callback);
+    return () => this.__unsubscribeForStore(store, type, callback);
   }
 
   private async __send<
@@ -88,20 +80,22 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
       ...(this.__subscribersOnce.get(type) ?? []),
       ...(this.__subscribersOnce.get('*') ?? []),
     ];
-    if (!subscribers && !subscribersOnce) return;
+    if (!subscribers.length && !subscribersOnce.length) return;
 
     const [payload = undefined, options = Transport.defaultSendOptions] = other;
 
     if (options.sync) {
-      if (subscribersOnce) {
+      if (subscribersOnce.length) {
         subscribersOnce.forEach((subscriber) => subscriber(type, payload));
         this.__subscribersOnce.get(type)?.clear();
         this.__subscribersOnce.get('*')?.clear();
         this.__subscribersOnce.delete(type);
       }
-      subscribers?.forEach((subscriber) => subscriber(type, payload));
+      if (subscribers.length) {
+        subscribers.forEach((subscriber) => subscriber(type, payload));
+      }
     } else {
-      if (subscribersOnce) {
+      if (subscribersOnce.length) {
         for (const subscriber of subscribersOnce) {
           await flushMicrotasks();
           subscriber(type, payload);
@@ -110,13 +104,17 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
         this.__subscribersOnce.get('*')?.clear();
         this.__subscribersOnce.delete(type);
       }
-      if (subscribers) {
+      if (subscribers.length) {
         for (const subscriber of subscribers) {
           await flushMicrotasks();
           subscriber(type, payload);
         }
       }
     }
+  }
+
+  public get isDestroyed() {
+    return this.__isDestroyed;
   }
 
   public on = this.__subscribe.bind(this, this.__subscribers);
@@ -150,8 +148,4 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
       this.__subscribers.clear();
     }, 0);
   }
-}
-
-export function createTransport<T extends EventLike>(): Transport<T> {
-  return new Transport<T>();
 }

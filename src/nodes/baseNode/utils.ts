@@ -3,6 +3,10 @@ type Subscriber<NAMESPACES extends string> = {
   events: string[];
 };
 
+export function getSubscriberId(namespace: string, event: string): string {
+  return `${namespace}:${event}`;
+}
+
 export function getSubscribers<NAMESPACES extends string | ''>(
   type: string,
   namespaces: NAMESPACES[],
