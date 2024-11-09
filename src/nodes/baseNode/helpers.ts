@@ -1,6 +1,6 @@
-import { EventLike } from '../../types';
+import { type EventLike } from '../../types';
 
-import { BaseNode, BaseNodeProps } from './baseNode';
+import { BaseNode, type BaseNodeProps } from './baseNode';
 
 export function createBaseNode<
   EVENTS extends EventLike,
