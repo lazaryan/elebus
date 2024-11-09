@@ -13,6 +13,10 @@
     "signals",
     "transport"
   ],
+  "workspaces": [
+    ".",
+    "benchmarks"
+  ],
   "scripts": {
     "prepare": "husky install",
     "dev": "vite",
