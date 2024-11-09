@@ -9,6 +9,7 @@ export default defineConfig({
   plugins: [
     dts({
       insertTypesEntry: true,
+      exclude: '**/*.test.ts',
     }),
   ],
   build: {
