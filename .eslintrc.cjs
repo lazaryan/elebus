@@ -19,6 +19,7 @@ module.exports = {
   rules: {
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-this-alias': 'off',
+    '@typescript-eslint/no-empty-object-type': 'off',
     'no-inner-declarations': 'off',
     'sort-imports': [
       'warn',

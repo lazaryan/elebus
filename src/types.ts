@@ -20,6 +20,8 @@ export interface ReadableNodeImpl {
 
 export interface NodeImpl extends ReadableNodeImpl {
   getWatchedTransports: () => Readonly<Map<string, Set<ReadableNodeImpl>>>;
+
+  channel: (channel: any) => NodeImpl;
 }
 
 export interface TransportRootImpl extends ReadableNodeImpl {

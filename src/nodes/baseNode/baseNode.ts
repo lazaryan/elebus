@@ -19,6 +19,11 @@ type ExtractSubNamespace<
   NAMESPACE extends string,
 > = STR extends `${NAMESPACE}:${infer TYPE}` ? TYPE : STR;
 
+type IsTypeWithNamespace<
+  STR extends string,
+  NAMESPACE extends string,
+> = STR extends `${NAMESPACE}:${infer TYPE}` ? TYPE : never;
+
 export type BaseNodeChildren<NAMESPACES extends string> = Map<
   NAMESPACES,
   Set<TransportRootImpl>
@@ -43,8 +48,10 @@ type Subscriber = {
 
 type Subscribers = Map<SubscribeEvent, Subscriber>;
 
-export class BaseNode<EVENTS extends EventLike, NAMESPACES extends string = ''>
-  implements NodeImpl
+export class BaseNode<
+  EVENTS extends EventLike = {},
+  NAMESPACES extends string = '',
+> implements NodeImpl
 {
   /**
    * @internal
@@ -300,6 +307,33 @@ export class BaseNode<EVENTS extends EventLike, NAMESPACES extends string = ''>
     return new BaseNode<EVENTS & NEW_EVENTS, NAMESPACES | NEW_NAMESPACES>({
       children: newList,
     });
+  }
+
+  public channel<
+    NAMESPACE extends string & NAMESPACES,
+    OLD_EVENTS_KEYS extends string & keyof EVENTS,
+    NEW_TEST extends string,
+    OLD_EVENTS_WITH_NAMESPACE extends IsTypeWithNamespace<
+      OLD_EVENTS_KEYS,
+      NEW_TEST
+    >,
+    NEW_EVENTS extends {
+      [KEY in OLD_EVENTS_WITH_NAMESPACE]: EVENTS[MergeNamespaceAndTypeName<
+        NAMESPACE,
+        KEY
+      >];
+    },
+  >(channel: NAMESPACE): BaseNode<NEW_EVENTS, ''> {
+    const nodes = this.__roots.get(channel);
+
+    if (!nodes) {
+      return new BaseNode();
+    }
+
+    const list = new Map();
+    list.set('', nodes);
+
+    return new BaseNode({ children: list });
   }
 
   public getWatchedTransports(): Readonly<BaseNodeChildren<NAMESPACES>> {

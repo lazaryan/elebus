@@ -106,7 +106,7 @@ describe('BaseNode.on()', () => {
     const roots: BaseNodeChildren<''> = new Map();
     roots.set('', new Set([transport]));
 
-    const node = new BaseNode({ children: roots });
+    const node = new BaseNode<{ event: number }>({ children: roots });
     const mockSubscriber = jest.fn();
     node.on('event', mockSubscriber);
     transport.send('event', 123, { sync: true });
