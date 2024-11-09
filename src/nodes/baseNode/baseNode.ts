@@ -74,64 +74,61 @@ export class BaseNode<EVENTS extends EventLike, NAMESPACES extends string = ''>
     const store = mode === 'on' ? this.__subscribers : this.__subscribersOnce;
 
     getSubscribers(type, [...this.__roots.keys()]).forEach(
-      ({ namespace, events }) => {
+      ({ namespace, event }) => {
         const transports = this.__roots.get(namespace);
         if (!transports || !transports.size) return;
 
-        events.forEach((event) => {
-          const subscribeId = getSubscriberId(namespace, event);
-          const subscriber = store.get(subscribeId);
+        const subscribeId = getSubscriberId(namespace, event);
+        const subscriber = store.get(subscribeId);
 
-          if (subscriber) {
-            subscriber.subscribers.add(callback);
-            activeSubscribers.push(subscriber);
-          } else {
-            const subscribers: Set<(...args: any[]) => void> = new Set([
-              callback,
-            ]);
-            let unscubscribers: Array<Unscubscriber> = [];
+        if (subscriber) {
+          subscriber.subscribers.add(callback);
+          activeSubscribers.push(subscriber);
+          return;
+        }
 
-            function unsubscribe(): void {
-              subscribers.clear();
-              unscubscribers.forEach((unscubscriber) => unscubscriber());
-              unscubscribers = [];
-            }
+        const subscribers: Set<(...args: any[]) => void> = new Set([callback]);
+        let unscubscribers: Array<Unscubscriber> = [];
 
-            if (mode === 'on') {
-              function subscribe(type: string, ...args: any[]): void {
-                const event = namespace ? `${namespace}:${type}` : type;
-                subscribers.forEach((subscriber) => subscriber(event, ...args));
-              }
+        function unsubscribe(): void {
+          subscribers.clear();
+          unscubscribers.forEach((unscubscriber) => unscubscriber());
+          unscubscribers = [];
+        }
 
-              transports.forEach((transport) =>
-                unscubscribers.push(transport.on(event, subscribe)),
-              );
-            } else {
-              function subscribe(type: string, ...args: any[]): void {
-                const event = namespace ? `${namespace}:${type}` : type;
-                subscribers.forEach((subscriber) => subscriber(event, ...args));
-
-                subscribers.delete(callback);
-                if (!subscribers.size) {
-                  unsubscribe();
-                }
-              }
-
-              transports.forEach((transport) =>
-                unscubscribers.push(transport.on(event, subscribe)),
-              );
-            }
-
-            const newSubscriber: Subscriber = {
-              id: subscribeId,
-              subscribers,
-              unsubscribe,
-            };
-
-            activeSubscribers.push(newSubscriber);
-            store.set(subscribeId, newSubscriber);
+        if (mode === 'on') {
+          function subscribe(type: string, ...args: any[]): void {
+            const event = namespace ? `${namespace}:${type}` : type;
+            subscribers.forEach((subscriber) => subscriber(event, ...args));
           }
-        });
+
+          transports.forEach((transport) =>
+            unscubscribers.push(transport.on(event, subscribe)),
+          );
+        } else {
+          function subscribe(type: string, ...args: any[]): void {
+            const event = namespace ? `${namespace}:${type}` : type;
+            subscribers.forEach((subscriber) => subscriber(event, ...args));
+
+            subscribers.delete(callback);
+            if (!subscribers.size) {
+              unsubscribe();
+            }
+          }
+
+          transports.forEach((transport) =>
+            unscubscribers.push(transport.on(event, subscribe)),
+          );
+        }
+
+        const newSubscriber: Subscriber = {
+          id: subscribeId,
+          subscribers,
+          unsubscribe,
+        };
+
+        activeSubscribers.push(newSubscriber);
+        store.set(subscribeId, newSubscriber);
       },
     );
 
@@ -154,29 +151,27 @@ export class BaseNode<EVENTS extends EventLike, NAMESPACES extends string = ''>
     if (this.__isDestroyed) return;
 
     getSubscribers(type, [...this.__roots.keys()]).forEach(
-      ({ namespace, events }) => {
-        events.forEach((event) => {
-          const subscribeId = getSubscriberId(namespace, event);
+      ({ namespace, event }) => {
+        const subscribeId = getSubscriberId(namespace, event);
 
-          const subscriber = this.__subscribers.get(subscribeId);
-          const subscriberOnce = this.__subscribersOnce.get(subscribeId);
+        const subscriber = this.__subscribers.get(subscribeId);
+        const subscriberOnce = this.__subscribersOnce.get(subscribeId);
 
-          if (subscriber) {
-            subscriber.subscribers.delete(callback);
-            if (!subscriber.subscribers.size) {
-              subscriber.unsubscribe();
-              this.__subscribers.delete(subscriber.id);
-            }
+        if (subscriber) {
+          subscriber.subscribers.delete(callback);
+          if (!subscriber.subscribers.size) {
+            subscriber.unsubscribe();
+            this.__subscribers.delete(subscriber.id);
           }
+        }
 
-          if (subscriberOnce) {
-            subscriberOnce.subscribers.delete(callback);
-            if (!subscriberOnce.subscribers.size) {
-              subscriberOnce.unsubscribe();
-              this.__subscribersOnce.delete(subscriberOnce.id);
-            }
+        if (subscriberOnce) {
+          subscriberOnce.subscribers.delete(callback);
+          if (!subscriberOnce.subscribers.size) {
+            subscriberOnce.unsubscribe();
+            this.__subscribersOnce.delete(subscriberOnce.id);
           }
-        });
+        }
       },
     );
   }

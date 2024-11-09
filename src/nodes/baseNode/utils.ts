@@ -1,6 +1,6 @@
 type Subscriber<NAMESPACES extends string> = {
   namespace: NAMESPACES;
-  events: string[];
+  event: string;
 };
 
 export function getSubscriberId(namespace: string, event: string): string {
@@ -13,12 +13,12 @@ export function getSubscribers<NAMESPACES extends string | ''>(
 ): Subscriber<NAMESPACES>[] {
   // *
   if (type === '*') {
-    return namespaces.map((namespace) => ({ namespace, events: ['*'] }));
+    return namespaces.map((namespace) => ({ namespace, event: '*' }));
   }
 
   // event
   if (!type.includes(':')) {
-    return [{ namespace: '' as NAMESPACES, events: [type] }];
+    return [{ namespace: '' as NAMESPACES, event: type }];
   }
 
   const separatorIndex = type.lastIndexOf(':');
@@ -29,16 +29,20 @@ export function getSubscribers<NAMESPACES extends string | ''>(
   // namespace1:namespace2:*
   if (event === '*') {
     return namespaces
-      .filter((namespace) => namespace.startsWith(eventNamespace))
-      .map((namespace) => ({ namespace, events: ['*'] }));
+      .filter(
+        (namespace) =>
+          namespace === eventNamespace ||
+          namespace.startsWith(`${eventNamespace}:`),
+      )
+      .map((namespace) => ({ namespace, event: '*' }));
   }
 
   // namespace1:event
   // namespace1:namespace2:event
   if (namespaces.includes(eventNamespace as NAMESPACES)) {
-    return [{ namespace: eventNamespace as NAMESPACES, events: [event] }];
+    return [{ namespace: eventNamespace as NAMESPACES, event: event }];
   }
 
   // namespace === start type
-  return [{ namespace: '' as NAMESPACES, events: [event] }];
+  return [{ namespace: '' as NAMESPACES, event: type }];
 }
