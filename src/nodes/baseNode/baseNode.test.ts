@@ -9,7 +9,7 @@ describe('BaseNode smoke', () => {
       done();
     } catch (error) {
       console.error(error);
-      done('fail create base node without parents');
+      done.fail('fail create base node without parents');
     }
   });
 
@@ -23,7 +23,7 @@ describe('BaseNode smoke', () => {
       done();
     } catch (error) {
       console.error(error);
-      done('fail create base node with parents');
+      done.fail('fail create base node with parents');
     }
   });
 
