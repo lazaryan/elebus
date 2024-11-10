@@ -1,9 +1,11 @@
 import { BaseNode } from './nodes/baseNode';
 import type { EventLike, TransportRootImpl, Unscubscriber } from './types';
-import { flushMicrotasks, noopFunction } from './utils';
+import { noopFunction } from './utils';
 
 type Subscribers = Map<string, Set<(...args: any) => void>>;
 export type SendOptions = { sync?: boolean };
+
+const DEFAULT_SEND_OPTIONS: SendOptions = { sync: false };
 
 export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   /**
@@ -19,8 +21,6 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
    * @internal
    */
   private __isDestroyed = false;
-
-  static defaultSendOptions: SendOptions = { sync: false };
 
   /**
    * @internal
@@ -85,12 +85,12 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   /**
    * @internal
    */
-  private async __send<
+  private __send<
     TYPE extends string & keyof EVENTS,
     PARAMETERS extends EVENTS[TYPE] extends undefined | null
       ? (payload?: EVENTS[TYPE], options?: SendOptions) => void
       : (payload: EVENTS[TYPE], options?: SendOptions) => void,
-  >(type: TYPE, ...other: Parameters<PARAMETERS>): Promise<void> {
+  >(type: TYPE, ...other: Parameters<PARAMETERS>): void {
     if (this.__isDestroyed) return;
 
     const subscribers = [
@@ -103,33 +103,44 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     ];
     if (!subscribers.length && !subscribersOnce.length) return;
 
-    const [payload = undefined, options = Transport.defaultSendOptions] = other;
+    const [payload = undefined, options = DEFAULT_SEND_OPTIONS] = other;
 
     if (options.sync) {
       if (subscribersOnce.length) {
-        subscribersOnce.forEach((subscriber) => subscriber(type, payload));
-        this.__subscribersOnce.get(type)?.clear();
-        this.__subscribersOnce.get('*')?.clear();
-        this.__subscribersOnce.delete(type);
-      }
-      if (subscribers.length) {
-        subscribers.forEach((subscriber) => subscriber(type, payload));
-      }
-    } else {
-      if (subscribersOnce.length) {
         for (const subscriber of subscribersOnce) {
-          await flushMicrotasks();
           subscriber(type, payload);
         }
+
         this.__subscribersOnce.get(type)?.clear();
         this.__subscribersOnce.get('*')?.clear();
         this.__subscribersOnce.delete(type);
       }
       if (subscribers.length) {
         for (const subscriber of subscribers) {
-          await flushMicrotasks();
           subscriber(type, payload);
         }
+      }
+    } else {
+      if (subscribers.length) {
+        Promise.resolve().then(() => {
+          if (subscribers.length) {
+            for (const subscriber of subscribers) {
+              subscriber(type, payload);
+            }
+          }
+        });
+      }
+      if (subscribersOnce.length) {
+        Promise.resolve().then(() => {
+          if (subscribersOnce.length) {
+            for (const subscriber of subscribersOnce) {
+              subscriber(type, payload);
+            }
+            this.__subscribersOnce.get(type)?.clear();
+            this.__subscribersOnce.get('*')?.clear();
+            this.__subscribersOnce.delete(type);
+          }
+        });
       }
     }
   }
@@ -144,9 +155,6 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
 
   public addEventListener = this.on;
   public removeEventListener = this.off;
-
-  public subscribe = this.on;
-  public unscubscribe = this.off;
 
   public send = this.__send;
 

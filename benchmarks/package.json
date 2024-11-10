@@ -16,5 +16,8 @@
   "devDependencies": {
     "tinybench": "^3.0.3",
     "tsx": "4.19.2"
+  },
+  "dependencies": {
+    "nrgy": "0.0.45"
   }
 }
