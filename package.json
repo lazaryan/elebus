@@ -26,7 +26,8 @@
     "lint:eslint": "npm run eslint",
     "lint:tsc": "tsc -p tsconfig.json --noEmit",
     "eslint": "eslint --cache --max-warnings 0 \"src/**\"",
-    "test": "jest"
+    "test": "jest",
+    "benchmarks": "npm -w benchmarks start"
   },
   "devDependencies": {
     "@types/jest": "29.5.13",
