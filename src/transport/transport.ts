@@ -1,11 +1,11 @@
-import { BaseNode } from './nodes/baseNode';
-import type { EventLike, TransportRootImpl, Unscubscriber } from './types';
-import { noopFunction } from './utils';
+import { createNode, TransportNode } from '../node';
+import type { EventLike, TransportRootImpl, Unscubscriber } from '../types';
+import { noopFunction } from '../utils';
 
 type Subscribers = Map<string, Set<(...args: any) => void>>;
-export type SendOptions = { sync?: boolean };
+export type TransportSendOptions = { sync?: boolean };
 
-const DEFAULT_SEND_OPTIONS: SendOptions = { sync: false };
+const DEFAULT_SEND_OPTIONS: TransportSendOptions = { sync: false };
 
 export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   /**
@@ -88,8 +88,8 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   private __send<
     TYPE extends string & keyof EVENTS,
     PARAMETERS extends EVENTS[TYPE] extends undefined | null
-      ? (payload?: EVENTS[TYPE], options?: SendOptions) => void
-      : (payload: EVENTS[TYPE], options?: SendOptions) => void,
+      ? (payload?: EVENTS[TYPE], options?: TransportSendOptions) => void
+      : (payload: EVENTS[TYPE], options?: TransportSendOptions) => void,
   >(type: TYPE, ...other: Parameters<PARAMETERS>): void {
     if (this.__isDestroyed) return;
 
@@ -158,11 +158,11 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
 
   public send = this.__send;
 
-  public asReadonly(): BaseNode<EVENTS, ''> {
+  public asReadonly(): TransportNode<EVENTS, ''> {
     const children = new Map();
     children.set('', new Set([this]));
 
-    return new BaseNode({ children });
+    return createNode({ children });
   }
 
   public destroy() {

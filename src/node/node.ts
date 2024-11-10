@@ -1,41 +1,31 @@
-import { Transport } from '../../transport';
+import { Transport } from '../transport/transport';
 import {
   EventLike,
   NodeImpl,
   TransportRootImpl,
   Unscubscriber,
-} from '../../types';
-import { noopFunction } from '../../utils';
+} from '../types';
+import { noopFunction } from '../utils';
 
+import {
+  ExtractSubNamespace,
+  FilterTypeWithNamespace,
+  MergeNamespaceAndTypeName,
+} from './typeUtils';
 import { getSubscriberId, getSubscribers } from './utils';
 
-type MergeNamespaceAndTypeName<
-  NAMESPACE extends string,
-  TYPE extends string,
-> = NAMESPACE extends '' ? TYPE : `${NAMESPACE}:${TYPE}`;
-
-type ExtractSubNamespace<
-  STR extends string,
-  NAMESPACE extends string,
-> = STR extends `${NAMESPACE}:${infer TYPE}` ? TYPE : STR;
-
-type IsTypeWithNamespace<
-  STR extends string,
-  NAMESPACE extends string,
-> = STR extends `${NAMESPACE}:${infer TYPE}` ? TYPE : never;
-
-export type BaseNodeChildren<NAMESPACES extends string> = Map<
+export type TransportNodeChildren<NAMESPACES extends string> = Map<
   NAMESPACES,
   Set<TransportRootImpl>
 >;
 
-export type BaseNodeChildrenObject<NAMESPACES extends string> = Record<
+export type TransportNodeChildrenObject<NAMESPACES extends string> = Record<
   NAMESPACES,
   Set<TransportRootImpl>
 >;
 
-export type BaseNodeProps<NAMESPACES extends string> = {
-  children?: BaseNodeChildren<NAMESPACES>;
+export type TransportNodeProps<NAMESPACES extends string> = {
+  children?: TransportNodeChildren<NAMESPACES>;
 };
 
 type SubscribeEvent = string; // namespace:event
@@ -48,7 +38,7 @@ type Subscriber = {
 
 type Subscribers = Map<SubscribeEvent, Subscriber>;
 
-export class BaseNode<
+export class TransportNode<
   EVENTS extends EventLike = {},
   NAMESPACES extends string = '',
 > implements NodeImpl
@@ -56,7 +46,7 @@ export class BaseNode<
   /**
    * @internal
    */
-  private __roots: BaseNodeChildren<NAMESPACES> = new Map();
+  private __roots: TransportNodeChildren<NAMESPACES> = new Map();
 
   /**
    * @internal
@@ -71,7 +61,7 @@ export class BaseNode<
    */
   private __isDestroyed = false;
 
-  constructor(props?: BaseNodeProps<NAMESPACES>) {
+  constructor(props?: TransportNodeProps<NAMESPACES>) {
     this.__roots = props?.children ?? new Map();
   }
 
@@ -219,10 +209,10 @@ export class BaseNode<
   >(
     transport:
       | Transport<TRANSPORT_EVENTS>
-      | BaseNode<TRANSPORT_EVENTS, TRANSPORT_NAMESPACES>,
+      | TransportNode<TRANSPORT_EVENTS, TRANSPORT_NAMESPACES>,
     namespace: NEW_NAMESPACE,
-  ): BaseNode<NEW_EVENTS, NAMESPACES | NEW_NAMESPACE> {
-    const newList: BaseNodeChildren<NAMESPACES | NEW_NAMESPACE> = new Map(
+  ): TransportNode<NEW_EVENTS, NAMESPACES | NEW_NAMESPACE> {
+    const newList: TransportNodeChildren<NAMESPACES | NEW_NAMESPACE> = new Map(
       this.__roots,
     );
 
@@ -234,7 +224,7 @@ export class BaseNode<
         newList.set(namespace, new Set([transport]));
       }
 
-      return new BaseNode<NEW_EVENTS, NAMESPACES | NEW_NAMESPACE>({
+      return new TransportNode<NEW_EVENTS, NAMESPACES | NEW_NAMESPACE>({
         children: newList,
       });
     }
@@ -257,7 +247,7 @@ export class BaseNode<
       }
     });
 
-    return new BaseNode<NEW_EVENTS, NAMESPACES | NEW_NAMESPACE>({
+    return new TransportNode<NEW_EVENTS, NAMESPACES | NEW_NAMESPACE>({
       children: newList,
     });
   }
@@ -267,10 +257,10 @@ export class BaseNode<
     NEW_NAMESPACES extends string,
   >(
     transports:
-      | BaseNodeChildren<NEW_NAMESPACES>
-      | BaseNodeChildrenObject<NEW_NAMESPACES>,
-  ): BaseNode<EVENTS & NEW_EVENTS, NAMESPACES | NEW_NAMESPACES> {
-    const newList: BaseNodeChildren<NAMESPACES | NEW_NAMESPACES> = new Map(
+      | TransportNodeChildren<NEW_NAMESPACES>
+      | TransportNodeChildrenObject<NEW_NAMESPACES>,
+  ): TransportNode<EVENTS & NEW_EVENTS, NAMESPACES | NEW_NAMESPACES> {
+    const newList: TransportNodeChildren<NAMESPACES | NEW_NAMESPACES> = new Map(
       this.__roots,
     );
 
@@ -304,7 +294,7 @@ export class BaseNode<
       );
     }
 
-    return new BaseNode<EVENTS & NEW_EVENTS, NAMESPACES | NEW_NAMESPACES>({
+    return new TransportNode<EVENTS & NEW_EVENTS, NAMESPACES | NEW_NAMESPACES>({
       children: newList,
     });
   }
@@ -313,7 +303,7 @@ export class BaseNode<
     NAMESPACE extends string & NAMESPACES,
     OLD_EVENTS_KEYS extends string & keyof EVENTS,
     NEW_TEST extends string,
-    OLD_EVENTS_WITH_NAMESPACE extends IsTypeWithNamespace<
+    OLD_EVENTS_WITH_NAMESPACE extends FilterTypeWithNamespace<
       OLD_EVENTS_KEYS,
       NEW_TEST
     >,
@@ -323,20 +313,20 @@ export class BaseNode<
         KEY
       >];
     },
-  >(channel: NAMESPACE): BaseNode<NEW_EVENTS, ''> {
+  >(channel: NAMESPACE): TransportNode<NEW_EVENTS, ''> {
     const nodes = this.__roots.get(channel);
 
     if (!nodes) {
-      return new BaseNode();
+      return new TransportNode();
     }
 
     const list = new Map();
     list.set('', nodes);
 
-    return new BaseNode({ children: list });
+    return new TransportNode({ children: list });
   }
 
-  public getWatchedTransports(): Readonly<BaseNodeChildren<NAMESPACES>> {
+  public getWatchedTransports(): Readonly<TransportNodeChildren<NAMESPACES>> {
     return this.__roots;
   }
 

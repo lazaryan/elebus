@@ -1,11 +1,11 @@
-type Subscriber<NAMESPACES extends string> = {
-  namespace: NAMESPACES;
-  event: string;
-};
-
 export function getSubscriberId(namespace: string, event: string): string {
   return `${namespace}:${event}`;
 }
+
+export type Subscriber<NAMESPACES extends string> = {
+  namespace: NAMESPACES;
+  event: string;
+};
 
 export function getSubscribers<NAMESPACES extends string | ''>(
   type: string,

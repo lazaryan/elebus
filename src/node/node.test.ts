@@ -1,11 +1,11 @@
-import { Transport } from '../../transport';
+import { Transport } from '../transport/transport';
 
-import { BaseNode, type BaseNodeChildren } from './baseNode';
+import { TransportNode, type TransportNodeChildren } from './node';
 
 describe('BaseNode smoke', () => {
   it('create node without parents', (done) => {
     try {
-      new BaseNode();
+      new TransportNode();
       done();
     } catch (error) {
       console.error(error);
@@ -15,11 +15,11 @@ describe('BaseNode smoke', () => {
 
   it('create node with parents', (done) => {
     const transport = new Transport();
-    const roots: BaseNodeChildren<''> = new Map();
+    const roots: TransportNodeChildren<''> = new Map();
     roots.set('', new Set([transport]));
 
     try {
-      new BaseNode({ children: roots });
+      new TransportNode({ children: roots });
       done();
     } catch (error) {
       console.error(error);
@@ -28,18 +28,18 @@ describe('BaseNode smoke', () => {
   });
 
   it('destroy', () => {
-    const node = new BaseNode();
+    const node = new TransportNode();
     expect(node.destroy.bind(node)).not.toThrow();
   });
 
   it('watch transport', () => {
-    const node = new BaseNode();
+    const node = new TransportNode();
     const transport = new Transport();
     expect(node.watch.bind(node, transport)).not.toThrow();
   });
 
   it('watch transports (object)', () => {
-    const node = new BaseNode();
+    const node = new TransportNode();
     const transport1 = new Transport();
     const transport2 = new Transport();
 
@@ -63,7 +63,8 @@ describe('BaseNode smoke', () => {
       }),
     ).not.toThrow();
 
-    const roots: BaseNodeChildren<'' | 'namespace1' | 'namespace2'> = new Map();
+    const roots: TransportNodeChildren<'' | 'namespace1' | 'namespace2'> =
+      new Map();
     roots.set('', new Set([transport1]));
     expect(node.watchTransports.bind(node, roots)).not.toThrow();
 
@@ -77,11 +78,12 @@ describe('BaseNode smoke', () => {
   });
 
   it('watch transports (map)', () => {
-    const node = new BaseNode();
+    const node = new TransportNode();
     const transport1 = new Transport();
     const transport2 = new Transport();
 
-    const roots: BaseNodeChildren<'' | 'namespace1' | 'namespace2'> = new Map();
+    const roots: TransportNodeChildren<'' | 'namespace1' | 'namespace2'> =
+      new Map();
     roots.set('', new Set([transport1]));
     expect(node.watchTransports.bind(node, roots)).not.toThrow();
 
@@ -103,10 +105,10 @@ describe('BaseNode.on()', () => {
   });
 
   it('subscribe to event', () => {
-    const roots: BaseNodeChildren<''> = new Map();
+    const roots: TransportNodeChildren<''> = new Map();
     roots.set('', new Set([transport]));
 
-    const node = new BaseNode<{ event: number }>({ children: roots });
+    const node = new TransportNode<{ event: number }>({ children: roots });
     const mockSubscriber = jest.fn();
     node.on('event', mockSubscriber);
     transport.send('event', 123, { sync: true });
