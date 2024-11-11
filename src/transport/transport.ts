@@ -2,6 +2,8 @@ import { createNode, TransportNode } from '../node';
 import type { EventLike, TransportRootImpl, Unscubscriber } from '../types';
 import { noopFunction } from '../utils';
 
+import { TransportOptions } from './types';
+
 type Subscribers = Map<string, Set<(...args: any) => void>>;
 export type TransportSendOptions = { sync?: boolean };
 
@@ -22,6 +24,22 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
    */
   private __isDestroyed = false;
 
+  public readonly name: TransportOptions['name'] = undefined;
+
+  private onDestroy: TransportOptions['onDestroy'];
+  private onSubscribe: TransportOptions['onSubscribe'];
+  private onUnsubscribe: TransportOptions['onUnsubscribe'];
+
+  constructor(options?: TransportOptions) {
+    if (options) {
+      this.name = options.name;
+
+      this.onDestroy = options.onDestroy;
+      this.onSubscribe = options.onSubscribe;
+      this.onUnsubscribe = options.onUnsubscribe;
+    }
+  }
+
   /**
    * @internal
    */
@@ -40,6 +58,24 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     subscribers.delete(callback);
     if (!subscribers.size) {
       store.delete(type);
+
+      if (this.onUnsubscribe) {
+        const subscribers = [
+          ...(this.__subscribers.get(type) ?? []),
+          ...(type !== '*' ? (this.__subscribers.get('*') ?? []) : []),
+        ];
+        const subscribersOnce = [
+          ...(this.__subscribersOnce.get(type) ?? []),
+          ...(type !== '*' ? (this.__subscribersOnce.get('*') ?? []) : []),
+        ];
+
+        this.onUnsubscribe(
+          type,
+          subscribers.length > 0 || subscribersOnce.length > 0,
+        );
+      }
+    } else if (this.onUnsubscribe) {
+      this.onUnsubscribe(type, true);
     }
   }
 
@@ -75,8 +111,10 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     const subscribers = store.get(type);
     if (subscribers) {
       subscribers.add(callback);
+      this.onSubscribe?.(type, false);
     } else {
       store.set(type, new Set([callback]));
+      this.onSubscribe?.(type, true);
     }
 
     return () => this.__unsubscribeForStore(store, type, callback);
@@ -169,6 +207,9 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     if (this.__isDestroyed) return;
     this.__isDestroyed = true;
 
+    this.onSubscribe = undefined;
+    this.onUnsubscribe = undefined;
+
     setTimeout(() => {
       this.__subscribersOnce.forEach((subscribers) => subscribers.clear());
       this.__subscribersOnce.clear();
@@ -176,5 +217,8 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
       this.__subscribers.forEach((subscribers) => subscribers.clear());
       this.__subscribers.clear();
     }, 0);
+
+    this.onDestroy?.();
+    this.onDestroy = undefined;
   }
 }
