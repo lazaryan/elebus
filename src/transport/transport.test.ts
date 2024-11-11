@@ -10,6 +10,7 @@ describe('smoke tests', () => {
   });
   it('subscribe', () => {
     const transport = createTransport();
+
     expect(transport.on.bind(transport, '*', () => {})).not.toThrow();
     expect(transport.destroy.bind(transport)).not.toThrow();
     expect(transport.isDestroyed).toBeTruthy();
@@ -41,12 +42,14 @@ describe('destroy', () => {
   });
   it('isDestroyed is true after destroy', () => {
     const transport = createTransport();
+
     transport.destroy();
     expect(transport.isDestroyed).toBeTruthy();
   });
   it('not send messages after destroy for old subbscribers', () => {
     const transport = createTransport<{ event: undefined }>();
     const mockSubscriber = jest.fn();
+
     transport.on('event', mockSubscriber);
     transport.destroy();
     transport.send('event');
@@ -55,9 +58,22 @@ describe('destroy', () => {
   it('not send messages after destroy for new subbscribers', () => {
     const transport = createTransport<{ event: undefined }>();
     const mockSubscriber = jest.fn();
+
     transport.destroy();
     transport.on('event', mockSubscriber);
     transport.send('event');
     expect(mockSubscriber.mock.calls).toHaveLength(0);
+  });
+  it('send destroy method in lifecucle', () => {
+    const mockSubscriber = jest.fn();
+    const transport = createTransport<{ event: undefined }>({
+      onDestroy: mockSubscriber,
+    });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(0);
+    transport.destroy();
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    transport.destroy();
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
   });
 });

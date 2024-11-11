@@ -63,6 +63,33 @@ export class TransportNode<
 
   constructor(props?: TransportNodeProps<NAMESPACES>) {
     this.__roots = props?.children ?? new Map();
+
+    if (this.__roots.size) {
+      const unsubscribers: Set<Unscubscriber> = new Set();
+
+      this.__roots.forEach((transports, namespace) => {
+        transports.forEach((transport) => {
+          const unsubscriber = transport.once('___elebus_root_destroy', () => {
+            transports.delete(transport);
+            unsubscribers.delete(unsubscriber);
+            if (!transports.size) {
+              this.__roots.delete(namespace);
+            }
+          });
+          unsubscribers.add(unsubscriber);
+        });
+      });
+
+      const unsubscribe = () => {
+        unsubscribers.forEach((unsubscriber) => unsubscriber());
+      };
+
+      this.__subscribersOnce.set('___elebus_root_destroy', {
+        id: '___elebus_root_destroy',
+        subscribers: new Set(),
+        unsubscribe,
+      });
+    }
   }
 
   /**
@@ -193,6 +220,13 @@ export class TransportNode<
 
   public get isDestroyed() {
     return this.__isDestroyed;
+  }
+
+  public as<
+    EVENTS extends EventLike,
+    NAMESPACES extends string = '',
+  >(): TransportNode<EVENTS, NAMESPACES> {
+    return this as unknown as TransportNode<EVENTS, NAMESPACES>;
   }
 
   public watch<

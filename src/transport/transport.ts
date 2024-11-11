@@ -7,6 +7,10 @@ import { TransportOptions } from './types';
 type Subscribers = Map<string, Set<(...args: any) => void>>;
 export type TransportSendOptions = { sync?: boolean };
 
+export type InternalsEvents = {
+  ___elebus_root_destroy: undefined;
+};
+
 const DEFAULT_SEND_OPTIONS: TransportSendOptions = { sync: false };
 
 export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
@@ -209,6 +213,15 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
 
     this.onSubscribe = undefined;
     this.onUnsubscribe = undefined;
+
+    const subscribersDestroy = this.__subscribersOnce.get(
+      '___elebus_root_destroy',
+    );
+    if (subscribersDestroy) {
+      setTimeout(() => {
+        subscribersDestroy.forEach((subscruber) => subscruber());
+      }, 0);
+    }
 
     setTimeout(() => {
       this.__subscribersOnce.forEach((subscribers) => subscribers.clear());

@@ -98,25 +98,60 @@ describe('BaseNode smoke', () => {
 });
 
 describe('BaseNode.on()', () => {
-  const transport = new Transport();
+  it('subscribe to transport', () => {
+    const transport = new Transport<{ event: number; event2: undefined }>();
 
-  afterAll(() => {
-    transport.destroy();
-  });
-
-  it('subscribe to event', () => {
     const roots: TransportNodeChildren<''> = new Map();
     roots.set('', new Set([transport]));
 
-    const node = new TransportNode<{ event: number }>({ children: roots });
+    const node = new TransportNode<{ event: number; event2: undefined }>({
+      children: roots,
+    });
     const mockSubscriber = jest.fn();
     node.on('event', mockSubscriber);
     transport.send('event', 123, { sync: true });
+    transport.send('event2', undefined, { sync: true });
 
     expect(mockSubscriber.mock.calls).toHaveLength(1);
     expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
 
+    transport.destroy();
     node.destroy();
     roots.clear();
+  });
+
+  it('subscribe to transport for watch', () => {
+    const transport = new Transport<{ event: number; event2: undefined }>();
+
+    const node = new TransportNode().watch(transport, '');
+    const mockSubscriber = jest.fn();
+    node.on('event', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+    transport.send('event2', undefined, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+
+    transport.destroy();
+    node.destroy();
+  });
+
+  it('subscribe to transport for watchTransports', () => {
+    const transport = new Transport<{ event: number; event2: undefined }>();
+
+    const node = new TransportNode().watchTransports<
+      { event: number; event2: undefined },
+      ''
+    >({ '': new Set([transport]) });
+    const mockSubscriber = jest.fn();
+    node.on('event', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+    transport.send('event2', undefined, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+
+    transport.destroy();
+    node.destroy();
   });
 });
