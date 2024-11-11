@@ -5,6 +5,8 @@ export type Unscubscriber = () => void;
 type BaseCallback = (type: string, payload?: any) => void;
 
 export interface ReadableNodeImpl {
+  isDestroyed: boolean;
+
   on(type: string, callback: BaseCallback): Unscubscriber;
   once(type: string, callback: BaseCallback): Unscubscriber;
   off(type: string, callback: BaseCallback): void;

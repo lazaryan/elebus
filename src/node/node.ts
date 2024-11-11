@@ -56,10 +56,8 @@ export class TransportNode<
    * @internal
    */
   private __subscribersOnce: Subscribers = new Map();
-  /**
-   * @internal
-   */
-  private __isDestroyed = false;
+
+  public isDestroyed: boolean = false;
 
   constructor(props?: TransportNodeProps<NAMESPACES>) {
     this.__roots = props?.children ?? new Map();
@@ -110,7 +108,7 @@ export class TransportNode<
     type: EVENT_TYPE,
     callback: (...args: CB[EVENT]) => void,
   ): Unscubscriber {
-    if (this.__isDestroyed) return noopFunction;
+    if (this.isDestroyed) return noopFunction;
 
     let activeSubscribers: Subscriber[] = [];
 
@@ -194,7 +192,7 @@ export class TransportNode<
     type: EVENT_TYPE,
     callback: (...args: any[]) => void,
   ): void {
-    if (this.__isDestroyed) return;
+    if (this.isDestroyed) return;
 
     getSubscribers(type, [...this.__roots.keys()]).forEach(
       ({ namespace, event }) => {
@@ -220,10 +218,6 @@ export class TransportNode<
         }
       },
     );
-  }
-
-  public get isDestroyed() {
-    return this.__isDestroyed;
   }
 
   public as<
@@ -379,8 +373,8 @@ export class TransportNode<
   public unscubscribe = this.off;
 
   public destroy(): void {
-    if (this.__isDestroyed) return;
-    this.__isDestroyed = true;
+    if (this.isDestroyed) return;
+    this.isDestroyed = true;
 
     this.__subscribers.forEach((subscriber) => subscriber.unsubscribe());
     this.__subscribersOnce.forEach((subscriber) => subscriber.unsubscribe());

@@ -26,13 +26,18 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   /**
    * @internal
    */
-  private __isDestroyed = false;
-
-  public readonly name: TransportOptions['name'] = undefined;
-
   private onDestroy: TransportOptions['onDestroy'];
+  /**
+   * @internal
+   */
   private onSubscribe: TransportOptions['onSubscribe'];
+  /**
+   * @internal
+   */
   private onUnsubscribe: TransportOptions['onUnsubscribe'];
+
+  public isDestroyed: boolean = false;
+  public readonly name: TransportOptions['name'] = undefined;
 
   constructor(options?: TransportOptions) {
     if (options) {
@@ -54,7 +59,7 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     type: EVENT_TYPE,
     callback: (...args: any) => void,
   ): void {
-    if (this.__isDestroyed) return;
+    if (this.isDestroyed) return;
 
     const subscribers = store.get(type);
     if (!subscribers || !subscribers.size) return;
@@ -64,18 +69,13 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
       store.delete(type);
 
       if (this.onUnsubscribe) {
-        const subscribers = [
-          ...(this.__subscribers.get(type) ?? []),
-          ...(type !== '*' ? (this.__subscribers.get('*') ?? []) : []),
-        ];
-        const subscribersOnce = [
-          ...(this.__subscribersOnce.get(type) ?? []),
-          ...(type !== '*' ? (this.__subscribersOnce.get('*') ?? []) : []),
-        ];
+        const subscribers = this.__subscribers.get(type);
+        const subscribersOnce = this.__subscribersOnce.get(type);
 
         this.onUnsubscribe(
           type,
-          subscribers.length > 0 || subscribersOnce.length > 0,
+          (subscribers !== undefined && subscribers.size > 0) ||
+            (subscribersOnce !== undefined && subscribersOnce.size > 0),
         );
       }
     } else if (this.onUnsubscribe) {
@@ -90,7 +90,7 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     type: EVENT_TYPE,
     callback: (...args: any) => void,
   ): void {
-    if (this.__isDestroyed) return;
+    if (this.isDestroyed) return;
 
     this.__unsubscribeForStore(this.__subscribersOnce, type, callback);
     this.__unsubscribeForStore(this.__subscribers, type, callback);
@@ -110,7 +110,7 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     type: EVENT_TYPE,
     callback: (...args: CB[EVENT]) => void,
   ): Unscubscriber {
-    if (this.__isDestroyed) return noopFunction;
+    if (this.isDestroyed) return noopFunction;
 
     const subscribers = store.get(type);
     if (subscribers) {
@@ -133,7 +133,7 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
       ? (payload?: EVENTS[TYPE], options?: TransportSendOptions) => void
       : (payload: EVENTS[TYPE], options?: TransportSendOptions) => void,
   >(type: TYPE, ...other: Parameters<PARAMETERS>): void {
-    if (this.__isDestroyed) return;
+    if (this.isDestroyed) return;
 
     const subscribers = [
       ...(this.__subscribers.get(type) ?? []),
@@ -187,10 +187,6 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     }
   }
 
-  public get isDestroyed() {
-    return this.__isDestroyed;
-  }
-
   public on = this.__subscribe.bind(this, this.__subscribers);
   public once = this.__subscribe.bind(this, this.__subscribersOnce);
   public off = this.__unsubscribe;
@@ -208,8 +204,8 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   }
 
   public destroy() {
-    if (this.__isDestroyed) return;
-    this.__isDestroyed = true;
+    if (this.isDestroyed) return;
+    this.isDestroyed = true;
 
     this.onSubscribe = undefined;
     this.onUnsubscribe = undefined;

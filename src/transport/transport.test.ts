@@ -253,6 +253,79 @@ describe('off', () => {
   });
 });
 
+describe('lifecucle', () => {
+  it('send subscribe event in lifecucle', () => {
+    const mockSubscriber = jest.fn();
+    const transport = createTransport<{ event: undefined }>({
+      onSubscribe: mockSubscriber,
+    });
+
+    const unsubscriber1 = transport.on('event', () => {});
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', true]);
+
+    const unsubscriber2 = transport.on('event', () => {});
+    expect(mockSubscriber.mock.calls).toHaveLength(2);
+    expect(mockSubscriber.mock.calls[1]).toEqual(['event', false]);
+
+    unsubscriber1();
+    unsubscriber2();
+
+    const unsubscriber3 = transport.on('event', () => {});
+    expect(mockSubscriber.mock.calls).toHaveLength(3);
+    expect(mockSubscriber.mock.calls[2]).toEqual(['event', true]);
+    unsubscriber3();
+
+    const unsubscriber4 = transport.on('event', () => {});
+    expect(mockSubscriber.mock.calls).toHaveLength(4);
+    expect(mockSubscriber.mock.calls[3]).toEqual(['event', true]);
+    unsubscriber4();
+  });
+
+  it('send unsubscribe event in lifecucle', () => {
+    const mockSubscriber = jest.fn();
+    const transport = createTransport<{ event: undefined }>({
+      onUnsubscribe: mockSubscriber,
+    });
+
+    const unsubscriber1 = transport.on('event', () => {});
+    expect(mockSubscriber.mock.calls).toHaveLength(0);
+    const unsubscriber2 = transport.on('event', () => {});
+
+    unsubscriber1();
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', true]);
+
+    unsubscriber2();
+    expect(mockSubscriber.mock.calls).toHaveLength(2);
+    expect(mockSubscriber.mock.calls[1]).toEqual(['event', false]);
+
+    const unsubscriber3 = transport.on('event', () => {});
+    const unsubscriber4 = transport.on('event', () => {});
+
+    unsubscriber3();
+    expect(mockSubscriber.mock.calls).toHaveLength(3);
+    expect(mockSubscriber.mock.calls[2]).toEqual(['event', true]);
+
+    unsubscriber4();
+    expect(mockSubscriber.mock.calls).toHaveLength(4);
+    expect(mockSubscriber.mock.calls[3]).toEqual(['event', false]);
+  });
+
+  it('send destroy method in lifecucle', () => {
+    const mockSubscriber = jest.fn();
+    const transport = createTransport<{ event: undefined }>({
+      onDestroy: mockSubscriber,
+    });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(0);
+    transport.destroy();
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    transport.destroy();
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+  });
+});
+
 describe('destroy()', () => {
   it('not destroyed in start', () => {
     const transport = createTransport();
@@ -281,17 +354,5 @@ describe('destroy()', () => {
     transport.on('event', mockSubscriber);
     transport.send('event');
     expect(mockSubscriber.mock.calls).toHaveLength(0);
-  });
-  it('send destroy method in lifecucle', () => {
-    const mockSubscriber = jest.fn();
-    const transport = createTransport<{ event: undefined }>({
-      onDestroy: mockSubscriber,
-    });
-
-    expect(mockSubscriber.mock.calls).toHaveLength(0);
-    transport.destroy();
-    expect(mockSubscriber.mock.calls).toHaveLength(1);
-    transport.destroy();
-    expect(mockSubscriber.mock.calls).toHaveLength(1);
   });
 });
