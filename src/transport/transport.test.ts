@@ -35,7 +35,225 @@ describe('smoke tests', () => {
   });
 });
 
-describe('destroy', () => {
+describe('on()', () => {
+  it('calls subscriber', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.on('event', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+  });
+
+  it('not double calls double subscriber', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.on('event', mockSubscriber);
+    transport.on('event', mockSubscriber);
+    transport.on('event', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+  });
+
+  it('calls subscribers', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber1 = jest.fn();
+    const mockSubscriber2 = jest.fn();
+
+    transport.on('event', mockSubscriber1);
+    transport.on('event', mockSubscriber2);
+    transport.on('event', mockSubscriber1);
+    transport.on('event', mockSubscriber2);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber1.mock.calls).toHaveLength(1);
+    expect(mockSubscriber1.mock.calls[0]).toEqual(['event', 123]);
+    expect(mockSubscriber2.mock.calls).toHaveLength(1);
+    expect(mockSubscriber2.mock.calls[0]).toEqual(['event', 123]);
+  });
+
+  it('subscribe only all events', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.on('*', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+  });
+
+  it('subscribe all events', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber1 = jest.fn();
+    const mockSubscriber2 = jest.fn();
+
+    transport.on('*', mockSubscriber1);
+    transport.on('event', mockSubscriber2);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber1.mock.calls).toHaveLength(1);
+    expect(mockSubscriber1.mock.calls[0]).toEqual(['event', 123]);
+    expect(mockSubscriber2.mock.calls).toHaveLength(1);
+    expect(mockSubscriber2.mock.calls[0]).toEqual(['event', 123]);
+  });
+
+  it('unsubscribe subscriber', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    const unsubscriber = transport.on('event', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+
+    unsubscriber();
+    transport.send('event', 123, { sync: true });
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+  });
+});
+
+describe('once()', () => {
+  it('calls subscriber', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.once('event', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+  });
+
+  it('not double calls double subscriber', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.once('event', mockSubscriber);
+    transport.once('event', mockSubscriber);
+    transport.once('event', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+  });
+
+  it('not calls subscriber for after first call', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.once('event', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+  });
+
+  it('subscribe only * events', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.once('*', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+  });
+
+  it('subscribe * events', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber1 = jest.fn();
+    const mockSubscriber2 = jest.fn();
+
+    transport.once('*', mockSubscriber1);
+    transport.once('event', mockSubscriber2);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber1.mock.calls).toHaveLength(1);
+    expect(mockSubscriber1.mock.calls[0]).toEqual(['event', 123]);
+    expect(mockSubscriber2.mock.calls).toHaveLength(1);
+    expect(mockSubscriber2.mock.calls[0]).toEqual(['event', 123]);
+  });
+
+  it('unsubscribe * subscriber after first event', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.once('*', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+  });
+
+  it('unsubscribe subscriber', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    const unsubscriber = transport.once('event', mockSubscriber);
+    unsubscriber();
+    transport.send('event', 123, { sync: true });
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(0);
+  });
+});
+
+describe('off', () => {
+  it('unsubscribe on events', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.on('event', mockSubscriber);
+    transport.off('event', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(0);
+  });
+
+  it('unsubscribe on * events', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.on('*', mockSubscriber);
+    transport.off('*', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(0);
+  });
+
+  it('unsubscribe once events', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.once('event', mockSubscriber);
+    transport.off('event', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(0);
+  });
+
+  it('unsubscribe once * events', () => {
+    const transport = createTransport<{ event: number }>();
+    const mockSubscriber = jest.fn();
+
+    transport.once('*', mockSubscriber);
+    transport.off('*', mockSubscriber);
+    transport.send('event', 123, { sync: true });
+
+    expect(mockSubscriber.mock.calls).toHaveLength(0);
+  });
+});
+
+describe('destroy()', () => {
   it('not destroyed in start', () => {
     const transport = createTransport();
     expect(transport.isDestroyed).toBeFalsy();

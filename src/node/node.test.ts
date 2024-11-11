@@ -97,7 +97,7 @@ describe('BaseNode smoke', () => {
   });
 });
 
-describe('BaseNode.on()', () => {
+describe('BaseNode subscribe to base event', () => {
   it('subscribe to transport', () => {
     const transport = new Transport<{ event: number; event2: undefined }>();
 
@@ -133,6 +133,30 @@ describe('BaseNode.on()', () => {
     expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
 
     transport.destroy();
+    node.destroy();
+  });
+  it('subscribe to transports for watch', () => {
+    const transport1 = new Transport<{ event: number; event2: undefined }>();
+    const transport2 = new Transport<{ event: number; event2: undefined }>();
+
+    const node = new TransportNode()
+      .watch(transport1, '')
+      .watch(transport2, '');
+    const mockSubscriber = jest.fn();
+    node.on('event', mockSubscriber);
+
+    transport1.send('event', 123, { sync: true });
+    transport1.send('event2', undefined, { sync: true });
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+    expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);
+
+    transport2.send('event', 123, { sync: true });
+    transport2.send('event2', undefined, { sync: true });
+    expect(mockSubscriber.mock.calls).toHaveLength(2);
+    expect(mockSubscriber.mock.calls[1]).toEqual(['event', 123]);
+
+    transport1.destroy();
+    transport2.destroy();
     node.destroy();
   });
 

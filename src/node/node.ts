@@ -74,6 +74,10 @@ export class TransportNode<
             unsubscribers.delete(unsubscriber);
             if (!transports.size) {
               this.__roots.delete(namespace);
+
+              if (!this.__roots.size) {
+                this.destroy();
+              }
             }
           });
           unsubscribers.add(unsubscriber);
