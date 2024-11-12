@@ -26,6 +26,7 @@ export type TransportNodeChildrenObject<NAMESPACES extends string> = Record<
 
 export type TransportNodeProps<NAMESPACES extends string> = {
   children?: TransportNodeChildren<NAMESPACES>;
+  name?: string;
 };
 
 type SubscribeEvent = string; // namespace:event
@@ -57,10 +58,13 @@ export class TransportNode<
    */
   private __subscribersOnce: Subscribers = new Map();
 
+  public name: string | undefined;
   public isDestroyed: boolean = false;
 
   constructor(props?: TransportNodeProps<NAMESPACES>) {
     this.__roots = props?.children ?? new Map();
+
+    this.name = props?.name;
 
     if (this.__roots.size) {
       const unsubscribers: Set<Unscubscriber> = new Set();
@@ -369,9 +373,11 @@ export class TransportNode<
   public addEventListener = this.on;
   public removeEventListener = this.off;
 
-  public subscribe = this.on;
-  public unscubscribe = this.off;
-
+  /**
+   * Method of destroying node.
+   * After this, subscription and sending events will not work,
+   * and all data will be cleared.
+   */
   public destroy(): void {
     if (this.isDestroyed) return;
     this.isDestroyed = true;

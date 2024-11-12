@@ -362,7 +362,10 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     const children = new Map();
     children.set('', new Set([this]));
 
-    return createNode({ children });
+    return createNode({
+      children,
+      name: this.name ? `${this.name}__node` : undefined,
+    });
   }
 
   /**
