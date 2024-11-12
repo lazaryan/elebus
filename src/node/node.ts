@@ -58,7 +58,15 @@ export class TransportNode<
    */
   private __subscribersOnce: Subscribers = new Map();
 
+  /**
+   * Node name
+   */
   public name: string | undefined;
+  /**
+   * Whether this node is destroyed.
+   * When the value becomes true,
+   * all data is cleared and subscriptions stop working.
+   */
   public isDestroyed: boolean = false;
 
   constructor(props?: TransportNodeProps<NAMESPACES>) {
@@ -69,6 +77,12 @@ export class TransportNode<
     if (this.__roots.size) {
       const unsubscribers: Set<Unscubscriber> = new Set();
 
+      /**
+       * Subscribe to the private event of root node destruction.
+       * When destroyed, remove it from the list of nodes.
+       * If there are no nodes left, then clear this node,
+       * because there is no one to subscribe to and new nodes will not appear.
+       */
       this.__roots.forEach((transports, namespace) => {
         transports.forEach((transport) => {
           const unsubscriber = transport.once('___elebus_root_destroy', () => {

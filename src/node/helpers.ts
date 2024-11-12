@@ -2,6 +2,9 @@ import { type EventLike } from '../types';
 
 import { TransportNode, type TransportNodeProps } from './node';
 
+/**
+ * Helper for create node
+ */
 export function createNode<
   EVENTS extends EventLike,
   NAMESPACES extends string = '',
