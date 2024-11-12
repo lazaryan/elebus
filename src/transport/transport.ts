@@ -36,7 +36,15 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
    */
   private onUnsubscribe: TransportOptions['onUnsubscribe'];
 
+  /**
+   * Whether this node is destroyed.
+   * When the value becomes true,
+   * all data is cleared and subscriptions stop working.
+   */
   public isDestroyed: boolean = false;
+  /**
+   * Transport name
+   */
   public readonly name: TransportOptions['name'] = undefined;
 
   constructor(options?: TransportOptions) {
@@ -50,6 +58,14 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   }
 
   /**
+   * unsubscribe from an event for a specific store.
+   * If there are no subscribers left for the event, we remove it from the map.
+   *
+   * If the onUnsubscribe lifecycle callback is passed,
+   * it will be called each time this function is called.
+   *
+   * If the transport was destroyed, the method does not work.
+   *
    * @internal
    */
   private __unsubscribeForStore<
@@ -69,14 +85,7 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
       store.delete(type);
 
       if (this.onUnsubscribe) {
-        const subscribers = this.__subscribers.get(type);
-        const subscribersOnce = this.__subscribersOnce.get(type);
-
-        this.onUnsubscribe(
-          type,
-          (subscribers !== undefined && subscribers.size > 0) ||
-            (subscribersOnce !== undefined && subscribersOnce.size > 0),
-        );
+        this.onUnsubscribe(type, subscribers?.size > 0);
       }
     } else if (this.onUnsubscribe) {
       this.onUnsubscribe(type, true);
@@ -97,6 +106,17 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
   }
 
   /**
+   * Method for subscribing to bus events for a specific store.
+   * In addition to events of the type, you can also specify the * event,
+   * which will allow you to subscribe to all bus events.
+   * The method returns a function for unsubscribing the callback
+   * (this can also be done via the off or removeEventListener methods).
+   * 
+   * If the onSubscribe lifecycle method is passed,
+   * it will be called when this event is sent.
+   * 
+   * If the transport was destroyed, this method will do nothing.
+
    * @internal
    */
   private __subscribe<
@@ -187,15 +207,157 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     }
   }
 
+  /**
+   * Method for subscribing to bus events.
+   * In addition to events of the type, you can also specify the * event,
+   * which will allow you to subscribe to all bus events.
+   * The method returns a function for unsubscribing the callback
+   * (this can also be done via the off or removeEventListener methods).
+   *
+   * If the onSubscribe lifecycle method is passed,
+   * it will be called when this event is sent.
+   *
+   * If the transport was destroyed, this method will do nothing.
+   *
+   * @example
+   * ```ts
+   * type Events = { event: string };
+   * const transport = createTransport<Events>();
+   *
+   * transport.on('event', (event, payload) => console.log(payload));
+   * const unsubscriber = transport.on('*', (event, payload) => console.log(payload));
+   * unsubscriber();
+   *
+   * transport.send('event', 'test');
+   * ```
+   */
   public on = this.__subscribe.bind(this, this.__subscribers);
+  /**
+   * A method for one-time subscription to bus events.
+   * In addition to events of the type, you can also specify an event *,
+   * which will allow you to subscribe to all bus events.
+   * The method returns a function for unsubscribing the callback
+   * (this can also be done via the off or removeEventListener methods).
+   *
+   * If the onSubscribe lifecycle method is passed,
+   * it will be called when this event is sent.
+   *
+   * If the transport was destroyed, this method will do nothing.
+   *
+   * @example
+   * ```ts
+   * type Events = { event: string };
+   * const transport = createTransport<Events>();
+   *
+   * transport.once('event', (event, payload) => console.log(payload));
+   * const unsubscriber = transport.once('*', (event, payload) => console.log(payload));
+   * unsubscriber();
+   *
+   * transport.send('event', 'test');
+   * transport.send('event', 'test'); // not call subscribers
+   * ```
+   */
   public once = this.__subscribe.bind(this, this.__subscribersOnce);
+  /**
+   * unsubscribe from an event.
+   * If there are no subscribers left for the event, we remove it from the map.
+   *
+   * If the onUnsubscribe lifecycle callback is passed,
+   * it will be called each time this function is called.
+   *
+   * If the transport was destroyed, the method does not work.
+   *
+   * @example
+   * ```ts
+   * type Events = { event: string };
+   * const transport = createTransport<Events>();
+   *
+   * function handler(type: string, payload: string): void {}
+   *
+   * transport.on('event', handler);
+   * transport.off('event', handler);
+   * ```
+   */
   public off = this.__unsubscribe;
 
+  /**
+   * Method for subscribing to bus events.
+   * In addition to events of the type, you can also specify the * event,
+   * which will allow you to subscribe to all bus events.
+   * The method returns a function for unsubscribing the callback
+   * (this can also be done via the off or removeEventListener methods).
+   *
+   * If the onSubscribe lifecycle method is passed,
+   * it will be called when this event is sent.
+   *
+   * If the transport was destroyed, this method will do nothing.
+   *
+   * @example
+   * ```ts
+   * type Events = { event: string };
+   * const transport = createTransport<Events>();
+   *
+   * transport.addEventListener('event', (event, payload) => console.log(payload));
+   * const unsubscriber = transport.addEventListener('*', (event, payload) => console.log(payload));
+   * unsubscriber();
+   *
+   * transport.send('event', 'test');
+   * ```
+   */
   public addEventListener = this.on;
+  /**
+   * unsubscribe from an event.
+   * If there are no subscribers left for the event, we remove it from the map.
+   *
+   * If the onUnsubscribe lifecycle callback is passed,
+   * it will be called each time this function is called.
+   *
+   * If the transport was destroyed, the method does not work.
+   *
+   * @example
+   * ```ts
+   * type Events = { event: string };
+   * const transport = createTransport<Events>();
+   *
+   * function handler(type: string, payload: string): void {}
+   *
+   * transport.addEventListener('event', handler);
+   * transport.removeEventListener('event', handler);
+   * ```
+   */
   public removeEventListener = this.off;
 
+  /**
+   * Method for sending an event to listeners.
+   * If the transport was destroyed,
+   * or no one is subscribed to this event, the method will do nothing.
+   *
+   * If there are subscribers to *,
+   * they will listen to all events that were forwarded.
+   *
+   * The method works in 2 modes: synchronous and asynchronous (asynchronous mode is enabled by default).
+   * To change this, you need to pass the 3rd argument.
+   *
+   * @example
+   * ```ts
+   * type Events = { event: string, event_empty: undefined };
+   * const transport = createTransport<Events>();
+   *
+   * transport.on('event', (event, payload) => console.log(payload));
+   * transport.on('event_empty', (event, payload) => console.log(payload));
+   * transport.on('*', (event, payload) => console.log(payload));
+   *
+   * transport.send('event', 'test');
+   * transport.send('event', 'test', { sync: true });
+   * transport.send('event_empty');
+   * transport.send('event_empty', undefined, { sync: true });
+   * ```
+   */
   public send = this.__send;
 
+  /**
+   * Method of returning a bus in readOnly mode in which the send method is missing.
+   */
   public asReadonly(): TransportNode<EVENTS, ''> {
     const children = new Map();
     children.set('', new Set([this]));
@@ -203,6 +365,11 @@ export class Transport<EVENTS extends EventLike> implements TransportRootImpl {
     return createNode({ children });
   }
 
+  /**
+   * Method of destroying transport.
+   * After this, subscription and sending events will not work,
+   * and all data will be cleared.
+   */
   public destroy() {
     if (this.isDestroyed) return;
     this.isDestroyed = true;

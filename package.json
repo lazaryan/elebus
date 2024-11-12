@@ -17,8 +17,19 @@
     ".",
     "benchmarks"
   ],
+  "files": [
+    "dist",
+    "src",
+    "LICENSE",
+    "Readme.md"
+  ],
+  "source": "src/index.ts",
+  "main": "dist/elebus.umd.cjs",
+  "unpkg": "dist/elebus.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "prepare": "husky install",
+    "prepublish": "npm run build",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",

@@ -20,6 +20,7 @@
     "noFallthroughCasesInSwitch": true,
     "stripInternal": true,
     "esModuleInterop": true,
+    "removeComments": false,
   },
   "include": ["src"]
 }
