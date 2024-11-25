@@ -1,30 +1,31 @@
+import type { TransportRoot } from './transport';
+
 export type EventLike = Record<string, unknown>;
 
 export type Unscubscriber = () => void;
 
-type BaseCallback = (type: string, payload?: any) => void;
+export type Namespace = string;
+export type TransportRootNodes = Record<Namespace, Array<TransportRoot<any>>>;
 
-export interface ReadableNodeImpl {
+export interface DestroyedNode {
   isDestroyed: boolean;
-
-  on(type: string, callback: BaseCallback): Unscubscriber;
-  once(type: string, callback: BaseCallback): Unscubscriber;
-  off(type: string, callback: BaseCallback): void;
-
-  addEventListener(type: string, callback: BaseCallback): Unscubscriber;
-  removeEventListener(type: string, callback: BaseCallback): void;
 
   destroy(): void;
 }
 
-export interface NodeImpl extends ReadableNodeImpl {
-  getWatchedTransports: () => Readonly<Map<string, Set<ReadableNodeImpl>>>;
-
-  channel: (channel: any) => NodeImpl;
+export interface BaseTransportRoot {
+  /**
+   * @internal
+   */
+  __isRoot: Readonly<true>;
 }
 
-export interface TransportRootImpl extends ReadableNodeImpl {
-  send(type: string, ...other: any[]): void;
+export interface BaseTransportNode {
+  /**
+   * @internal
+   */
+  __isRoot: Readonly<false>;
+  isDestroyed: boolean;
 
-  asReadonly(): ReadableNodeImpl;
+  getTransports: () => TransportRootNodes;
 }
