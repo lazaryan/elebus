@@ -1,4 +1,4 @@
-import type { BaseEventBusSubscriber } from '../baseEventBus';
+import type { BaseEventBusReadonly } from '../baseEventBusReadonly';
 import type { TransportReadonlyNode } from '../transportReadonlyNode';
 import type {
   BaseTransportRoot,
@@ -178,7 +178,7 @@ export interface TransportRoot<EVENTS extends EventLike>
    * transport.destroy(); // transport is destroy
    * ```
    */
-  lifecycle: Readonly<BaseEventBusSubscriber<TransportLifecycleEvents<EVENTS>>>;
+  lifecycle: Readonly<BaseEventBusReadonly<TransportLifecycleEvents<EVENTS>>>;
 
   /**
    * Method for sending an event to listeners.
@@ -215,5 +215,10 @@ export interface TransportRoot<EVENTS extends EventLike>
     ...other: Parameters<PARAMETERS>
   ): void;
 
+  /**
+   * Method for getting a node that has only subscription interfaces (on/once/off).
+   * Recommended for use in public API services to hide methods
+   * for direct control of transport state from the outside.
+   */
   asReadonly(): TransportReadonlyNode<EVENTS>;
 }

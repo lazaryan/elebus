@@ -1,7 +1,10 @@
 import type { EventLike, Unscubscriber } from '../types';
 import { noopFunction } from '../utils';
 
-import type { BaseEventBus as BaseEventBusImpl } from './types';
+import type {
+  BaseEventBus as BaseEventBusImpl,
+  BaseEventBusOptions,
+} from './types';
 
 type Event = string;
 type Subscribers = Record<Event, Set<(...args: any[]) => void>>;
@@ -26,6 +29,12 @@ export class BaseEventBus<EVENTS extends EventLike>
    */
   private __onceCallbackMap: OnceSubscribersMap = {};
 
+  public readonly name: string | undefined;
+
+  constructor(options?: BaseEventBusOptions) {
+    this.name = options?.name ?? undefined;
+  }
+
   public on(event: string, callback: (...args: any[]) => void): Unscubscriber {
     if (this.isDestroyed) return noopFunction;
 
@@ -49,7 +58,7 @@ export class BaseEventBus<EVENTS extends EventLike>
       this.__onceCallbackMap[event] &&
       this.__onceCallbackMap[event].has(callback)
     )
-      return noopFunction;
+      return this.off.bind(this, event, callback);
 
     const action: typeof callback = (...args) => {
       this.off(event, callback);
@@ -92,6 +101,7 @@ export class BaseEventBus<EVENTS extends EventLike>
       subscribers.delete(action);
       if (!subscribers.size) {
         delete this.__subscribers[event];
+        delete this.__onceCallbackMap[event];
       }
     } else {
       subscribers.delete(callback);
@@ -122,8 +132,7 @@ export class BaseEventBus<EVENTS extends EventLike>
       this.__onceCallbackMap = {};
 
       for (const event in this.__subscribers) {
-        const subscribers = this.__subscribers[event];
-        subscribers.clear();
+        this.__subscribers[event].clear();
       }
       this.__subscribers = {};
     }, 0);

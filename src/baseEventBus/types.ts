@@ -1,5 +1,12 @@
 import type { DestroyedNode, EventLike, Unscubscriber } from '../types';
 
+export type BaseEventBusOptions = {
+  /**
+   * Event bus name
+   */
+  name?: string;
+};
+
 export interface BaseEventBusSubscriber<EVENTS extends EventLike> {
   /**
    * Method for subscribing to bus events.
@@ -87,6 +94,7 @@ type BaseEventBusExtends<EVENTS extends EventLike> = DestroyedNode &
 
 export interface BaseEventBus<EVENTS extends EventLike>
   extends BaseEventBusExtends<EVENTS> {
+  name?: Readonly<string>;
   /**
    * Method for sending an event to listeners.
    * If the transport was destroyed,
