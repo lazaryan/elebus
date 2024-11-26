@@ -23,8 +23,8 @@
     "Readme.md"
   ],
   "source": "src/index.ts",
-  "main": "dist/elebus.umd.cjs",
-  "unpkg": "dist/elebus.js",
+  "main": "dist/index.umd.cjs",
+  "unpkg": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "prepare": "husky install",

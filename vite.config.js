@@ -18,7 +18,7 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/index.ts'),
       name: rootPackage['name'],
       // the proper extensions will be added
-      fileName: rootPackage['name'],
+      fileName: 'index',
     },
   },
 });
