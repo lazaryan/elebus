@@ -93,8 +93,22 @@ export interface SubscribeNode<EVENTS extends EventLike>
   extends SubscribeNodeBaseExtends<EVENTS> {
   name?: string;
 
-  add(namespace: Namespace, root: TransportRoot<any>): void;
-  remove(namespace: Namespace, root: TransportRoot<any>): void;
+  add<
+    TYPES extends string & keyof EVENTS,
+    TYPE extends Type,
+    ALL_NAMESPACES extends UtilsTypeFilterTypesWithNamespaces<TYPES, TYPE>,
+  >(
+    namespace: ALL_NAMESPACES | '',
+    root: TransportRoot<any>,
+  ): void;
+  remove<
+    TYPES extends string & keyof EVENTS,
+    TYPE extends Type,
+    ALL_NAMESPACES extends UtilsTypeFilterTypesWithNamespaces<TYPES, TYPE>,
+  >(
+    namespace: ALL_NAMESPACES | '',
+    root: TransportRoot<any>,
+  ): void;
   channel<
     EVENT_TYPES extends string & keyof EVENTS,
     TYPES extends string,

@@ -17,8 +17,10 @@ import type {
 } from './types';
 
 type Event = string;
-type Subscribers = Record<Event, Set<(...args: any) => void>>;
-type OnceSubscribersMap = Record<Event, WeakMap<() => void, () => void>>;
+type InitialAction = (...args: any[]) => void;
+type AbortAction = (...args: any[]) => void;
+type Subscribers = Record<Event, Set<InitialAction>>;
+type OnceSubscribersMap = Record<Event, WeakMap<InitialAction, AbortAction>>;
 
 const lifecycleWeakMap: WeakMap<
   Transport<any>,
@@ -76,7 +78,7 @@ export class Transport<EVENTS extends EventLike>
     lifecycleWeakMap.set(this, lifecycle);
   }
 
-  public on(event: string, callback: (...args: any[]) => void): Unscubscriber {
+  public on(event: string, callback: InitialAction): Unscubscriber {
     if (this.isDestroyed) return noopFunction;
 
     const unsubscriber = this.off.bind(this, event, callback);
@@ -107,10 +109,7 @@ export class Transport<EVENTS extends EventLike>
     return unsubscriber;
   }
 
-  public once(
-    event: string,
-    callback: (...args: any[]) => void,
-  ): Unscubscriber {
+  public once(event: string, callback: InitialAction): Unscubscriber {
     if (this.isDestroyed) return noopFunction;
 
     const unsubscriber = this.off.bind(this, event, callback);
@@ -120,7 +119,7 @@ export class Transport<EVENTS extends EventLike>
     )
       return unsubscriber;
 
-    const action: typeof callback = (...args) => {
+    const action: AbortAction = (...args) => {
       this.off(event, callback);
       return callback(...args);
     };
@@ -158,7 +157,7 @@ export class Transport<EVENTS extends EventLike>
     return unsubscriber;
   }
 
-  public off(event: string, callback: (...args: any[]) => void): void {
+  public off(event: string, callback: InitialAction): void {
     if (this.isDestroyed) return;
 
     const subscribers = this.__subscribers[event];

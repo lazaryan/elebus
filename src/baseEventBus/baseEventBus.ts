@@ -7,8 +7,10 @@ import type {
 } from './types';
 
 type Event = string;
-type Subscribers = Record<Event, Set<(...args: any[]) => void>>;
-type OnceSubscribersMap = Record<Event, WeakMap<() => void, () => void>>;
+type InitialAction = (...args: any[]) => void;
+type AbortAction = (...args: any[]) => void;
+type Subscribers = Record<Event, Set<InitialAction>>;
+type OnceSubscribersMap = Record<Event, WeakMap<InitialAction, AbortAction>>;
 
 export class BaseEventBus<EVENTS extends EventLike>
   implements BaseEventBusImpl<EVENTS>
@@ -35,7 +37,7 @@ export class BaseEventBus<EVENTS extends EventLike>
     this.name = options?.name ?? undefined;
   }
 
-  public on(event: string, callback: (...args: any[]) => void): Unscubscriber {
+  public on(event: string, callback: InitialAction): Unscubscriber {
     if (this.isDestroyed) return noopFunction;
 
     let subscribers = this.__subscribers[event];
@@ -49,10 +51,7 @@ export class BaseEventBus<EVENTS extends EventLike>
     return this.off.bind(this, event, callback);
   }
 
-  public once(
-    event: string,
-    callback: (...args: any[]) => void,
-  ): Unscubscriber {
+  public once(event: string, callback: InitialAction): Unscubscriber {
     if (this.isDestroyed) return noopFunction;
     if (
       this.__onceCallbackMap[event] &&
@@ -60,7 +59,7 @@ export class BaseEventBus<EVENTS extends EventLike>
     )
       return this.off.bind(this, event, callback);
 
-    const action: typeof callback = (...args) => {
+    const action: AbortAction = (...args) => {
       this.off(event, callback);
       return callback(...args);
     };
@@ -84,7 +83,7 @@ export class BaseEventBus<EVENTS extends EventLike>
     return this.off.bind(this, event, callback);
   }
 
-  public off(event: string, callback: (...args: any[]) => void): void {
+  public off(event: string, callback: InitialAction): void {
     if (this.isDestroyed) return;
 
     const subscribers = this.__subscribers[event];
