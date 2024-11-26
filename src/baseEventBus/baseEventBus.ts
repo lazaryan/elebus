@@ -3,7 +3,9 @@ import { noopFunction } from '../utils';
 
 import type { BaseEventBus as BaseEventBusImpl } from './types';
 
-type Subscribers = Record<string, Set<(...args: any[]) => void>>;
+type Event = string;
+type Subscribers = Record<Event, Set<(...args: any[]) => void>>;
+type OnceSubscribersMap = Record<Event, WeakMap<() => void, () => void>>;
 
 export class BaseEventBus<EVENTS extends EventLike>
   implements BaseEventBusImpl<EVENTS>
@@ -19,6 +21,10 @@ export class BaseEventBus<EVENTS extends EventLike>
    * @internal
    */
   private __subscribers: Subscribers = {};
+  /**
+   * @internal
+   */
+  private __onceCallbackMap: OnceSubscribersMap = {};
 
   public on(event: string, callback: (...args: any[]) => void): Unscubscriber {
     if (this.isDestroyed) return noopFunction;
@@ -39,9 +45,14 @@ export class BaseEventBus<EVENTS extends EventLike>
     callback: (...args: any[]) => void,
   ): Unscubscriber {
     if (this.isDestroyed) return noopFunction;
+    if (
+      this.__onceCallbackMap[event] &&
+      this.__onceCallbackMap[event].has(callback)
+    )
+      return noopFunction;
 
     const action: typeof callback = (...args) => {
-      this.off(event, action);
+      this.off(event, callback);
       return callback(...args);
     };
 
@@ -53,6 +64,14 @@ export class BaseEventBus<EVENTS extends EventLike>
       this.__subscribers[event] = subscribers;
     }
 
+    if (this.__onceCallbackMap[event]) {
+      this.__onceCallbackMap[event].set(callback, action);
+    } else {
+      const newWeakMap = new WeakMap();
+      newWeakMap.set(callback, action);
+      this.__onceCallbackMap[event] = newWeakMap;
+    }
+
     return this.off.bind(this, event, callback);
   }
 
@@ -62,9 +81,23 @@ export class BaseEventBus<EVENTS extends EventLike>
     const subscribers = this.__subscribers[event];
     if (!subscribers || !subscribers.size) return;
 
-    subscribers.delete(callback);
-    if (!subscribers.size) {
-      delete this.__subscribers[event];
+    if (
+      this.__onceCallbackMap[event] &&
+      this.__onceCallbackMap[event].has(callback)
+    ) {
+      const action = this.__onceCallbackMap[event].get(callback);
+      this.__onceCallbackMap[event].delete(callback);
+      if (!action) return;
+
+      subscribers.delete(action);
+      if (!subscribers.size) {
+        delete this.__subscribers[event];
+      }
+    } else {
+      subscribers.delete(callback);
+      if (!subscribers.size) {
+        delete this.__subscribers[event];
+      }
     }
   }
 
@@ -76,7 +109,7 @@ export class BaseEventBus<EVENTS extends EventLike>
 
     Promise.resolve().then(() => {
       for (const subscriber of subscribers) {
-        subscriber(...args);
+        subscriber(type, ...args);
       }
     });
   }
@@ -86,6 +119,8 @@ export class BaseEventBus<EVENTS extends EventLike>
     this.isDestroyed = true;
 
     setTimeout(() => {
+      this.__onceCallbackMap = {};
+
       for (const event in this.__subscribers) {
         const subscribers = this.__subscribers[event];
         subscribers.clear();

@@ -2,7 +2,19 @@ import type { TransportRootNodes } from '../types';
 
 import type { OptionsRoots } from './types';
 
-function mergeNamespaces(namespace1: string, namespace2: string): string {
+/**
+ * Method for gluing two namespaces
+ *
+ * @example
+ * mergeNamespaces('', '') // ''
+ * mergeNamespaces('namespace1', '') // 'namespace1'
+ * mergeNamespaces('', 'namespace2') // 'namespace2'
+ * mergeNamespaces('namespace1', 'namespace2') // 'namespace1:namespace2'
+ */
+export function mergeNamespaces(
+  namespace1: string,
+  namespace2: string,
+): string {
   if (!namespace1 && !namespace2) return '';
   if (!namespace1) return namespace2;
   if (!namespace2) return namespace1;
@@ -79,7 +91,11 @@ export function getSubscribers<NAMESPACES extends string | ''>(
 ): Subscriber<NAMESPACES>[] {
   // *
   if (type === '*') {
-    return namespaces.map((namespace) => ({ namespace, event: '*' }));
+    const result: Subscriber<NAMESPACES>[] = [];
+    for (const namespace of namespaces) {
+      result.push({ namespace, event: '*' });
+    }
+    return result;
   }
 
   // event
@@ -94,13 +110,16 @@ export function getSubscribers<NAMESPACES extends string | ''>(
   // namespace1:*
   // namespace1:namespace2:*
   if (event === '*') {
-    return namespaces
-      .filter(
-        (namespace) =>
-          namespace === eventNamespace ||
-          namespace.startsWith(`${eventNamespace}:`),
-      )
-      .map((namespace) => ({ namespace, event: '*' }));
+    const result: Subscriber<NAMESPACES>[] = [];
+    for (const namespace of namespaces) {
+      if (
+        namespace === eventNamespace ||
+        namespace.startsWith(`${eventNamespace}:`)
+      ) {
+        result.push({ namespace, event: '*' });
+      }
+    }
+    return result;
   }
 
   // namespace1:event
@@ -122,20 +141,7 @@ export function findChannelNamespaces(
 
   for (const namespace of namespaces) {
     if (namespace === channel) {
-      if (result['']) {
-        result[''].push(...roots[namespace]);
-      } else {
-        result[''] = [...roots[namespace]];
-      }
-      continue;
-    }
-
-    if (namespace === channel + ':') {
-      if (result['']) {
-        result[''].push(...roots[namespace]);
-      } else {
-        result[''] = [...roots[namespace]];
-      }
+      result[''] = [...roots[namespace]];
       continue;
     }
 

@@ -203,6 +203,9 @@ export class SubscriberNode<EVENTS extends EventLike>
   }
 
   public channel(channel: string): SubscribeNodeImpl<any> {
+    if (!channel) {
+      throw new Error('not use empty channel');
+    }
     const newRoots = findChannelNamespaces(channel, this.__roots);
 
     return new SubscriberNode({
