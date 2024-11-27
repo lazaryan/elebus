@@ -9,47 +9,67 @@ The library consists of 2 nodes:
 1) root nodes
 2) nodes
 
-### Root node
+### Transport root node
 
 root nodes are responsible for subscriptions and sending messages.
 You can create a node as follows:
 
 ```ts
 type Events = { event: number };
-const transport = createTransport<Events>();
+const transport = createTransport<Events>({ name: 'root node' });
 ```
+
+Event format: `type EventLike = Record<string, unknown>`
 
 To clean up the class, use the `destroy` method, which will perform all unsubscriptions and clear the data.
 After calling destroy, subscriptions and sending messages will not work.
 
-There are 2 formats for subscribing to events: `on`/`once` or `addEventListener`.
+To determine that a node has already been destroyed in a transport, there is a property `isDestroyed`
+
+```ts
+type Events = { event: number };
+const transport = createTransport<Events>({ name: 'root node with lifecycle' });
+
+transport.on('event', () => console.log('event call'));
+transport.isDestroyed // false
+
+transport.destroy();
+transport.isDestroyed // true
+transport.send('event', 123); // not call because transport is destroyed
+```
+
+There are 2 functions for subscribing to events:
+1) on - listens to events until manual unsubscription is performed.
+2) once - unsubscribes automatically after the first required event.
+
 You can subscribe to a specific event or to all at once, specifying `'*'` instead of the event name.
 The methods return functions for unsubscribing from an event. Examples:
 
 ```ts
 type Events = { event1: number, event2: number };
-const transport = createTransport<Events>();
+const transport = createTransport<Events>({ name: 'root node with subscribers' });
 
+transport.on('*', (event, payload) => {});
 transport.on('event1', (event, payload) => {});
-transport.once('event1', (event, payload) => {});
-const unsubscriber = transport.addEventListener('*', (event, payload) => {});
+const unsubscriber = transport.once('event1', (event, payload) => {});
 
 unsubscriber();
 ```
 
-You can also use the `off` and `removeEventListener` methods to unsubscribe from an event
+You can also use the `off` methods to unsubscribe from an event
 
 ```ts
 type Events = { event1: number, event2: number };
 const transport = createTransport<Events>();
 
-function handler(event, payload): void { }
+function handler1(event, payload): void { }
+function handler2(event, payload): void { }
 
-transport.on('event1', handler);
-transport.off('event1', handler);
+transport.on('event1', handler1);
+transport.off('event1', handler1);
 
-transport.addEventListener('event1', handler);
-transport.removeEventListener('event1', handler);
+transport.once('event1', handler2);
+transport.off('event1', handler2);
 ```
 
 The `send` method is used to send messages.
@@ -64,74 +84,79 @@ transport.on('event1', () => {});
 transport.on('event2', () => {});
 
 transport.send('event1', 123);
-transport.send('event2'); // because event payload type === undefined
 transport.send('event2', undefined);
 ```
 
-By default, sending events is asynchronous. This behavior can be changed by passing a third argument
+By default, sending events is asynchronous.
+To make events send synchronously, you can pass the `sync: true` property when initializing the transport.
 
 ```ts
-transport.send('event1', 123, { sync: true });
-transport.send('event2', undefined, { sync: true });
+type Events = { event1: number, event2: undefined };
+const transport = createTransport<Events>({ sync: true });
+// sync call all subscribers
+transport.send('event1', 123);
+transport.send('event2', undefined);
 ```
 
-If you want the root node to be available in `readOnly mode` (without sending),
-for example outside the service, use the `asReadonly` method (It creates a child node which will be described below):
+If you want the root node to be available in `readonly mode` (without methods for sending events and destroying),
+for example when exporting a transport from a service, use the `asReadonly` method.
+
+This method will return a wrapper over the original node
+and leave only the methods for subscriptions and unsubscriptions publicly available.
 
 ```ts
 function myService() {
-  const transport = createTransport();
+  const transport = createTransport({ name: 'service transport' });
 
   return {
-    events: transport.asReadonly(), // not has send method
+    events: transport.asReadonly(), // not has send and destroy method
   }
 }
 ```
 
-To track the life cycle of the root node during initialization, you can pass callbacks:
+To track the life cycle of a node, there is a property called `lifecycle`,
+which is a minimal event bus that sends the following events:
 
-1) onDestroy - track node cleanup
-2) onSubscriber - called when subscribing to an event. Takes 2 arguments: the event name and whether the subscription is the first.
-2) onUnsubscriber - called when unsubscribing from an event. Takes 2 arguments: the event name and whether there are any more subscribers to this event.
+1) destroy - Root node is destroyed.
+2) subscribe - The node was subscribed to. The number of subscribers is passed to the event.
+3) unsubscribe - The node has been unsubscribed. The event is passed the number of remaining subscribers to this event.
 
 ```ts
-type Events = { event: number };
-const transport = createTransport({
-  name: 'transport name',
-  onDestroy: () => console.log('destroy class'),
-  onSubscribe: (event, isFirst) => console.log('subscribe', event, isFirst),
-  onUnsubscribe: (event, isHasSubscribers) => console.log('unsubscribe', event, isHasSubscribers),
-});
+type Events = { test_event: number };
+const transport = createTransport({ name: 'transport name'});
 
-const unsubscribe1 = transport.on('event', () => {}); // subscribe event true
-const unsubscribe2 = transport.on('event', () => {}); // subscribe event false
+transport.lifecycle.once('destroy', () => console.log('destroy node'));
+transport.lifecycle.on('subscribe', ({ event, subscribersCount }) => console.log(`subscribe ${event} ${subscribersCount}`));
+transport.lifecycle.on('unsubscribe', ({ event, subscribersCount }) => console.log(`unsubscribe ${event} ${subscribersCount}`));
 
-unsubscribe1(); // unsubscribe event true
-unsubscribe2(); // unsubscribe event false
+const unsubscribe1 = transport.on('test_event', () => {}); // subscribe test_event 1
+const unsubscribe2 = transport.on('test_event', () => {}); // subscribe test_event 2
 
-transport.destroy(); // destroy class
+unsubscribe1(); // unsubscribe test_event 1
+unsubscribe2(); // unsubscribe test_event 0
+
+transport.destroy(); // destroy node
 ```
 
-### Child Node
+When the main node is destroyed, the lifecycle is also destroyed.
 
-Used to combine multiple root nodes by namespaces and to conveniently subscribe to them.
+### Subscribe Node
 
-Namespaces are automatically substituted into types,
-which guarantees the disjointness of several events from different transports
-(when we have 2 transports with the same event names).
+Child nodes are used to combine root nodes into a single bus to allow subscription to several nodes at once,
+as well as to specific ones.
+The unification of root nodes occurs by namespace.
 
-Nodes implement the concept of an abstract tree.
-When creating child nodes, they do not refer to previous participants in the chain,
-but directly to the root nodes that are at the top of the subscription chain.
+Nodes implement the concept of an abstract tree,
+instead of a physical one, which means that a new node does not directly refer to the entire subscription chain,
+but through an alias (merge of namespaces) directly refers to all root nodes that participate in the subscription chain.
 
-When calling `root.asReadonly()`, a node is created.
-It can also be created using the `createNode` function:
+This slightly increases the subscription time,
+but the length of the subscription chain will not affect the speed and complexity of sending the events themselves.
+
+To create a node, use the `createSubscribeNode` function.
 
 ```ts
-const root = createTransport();
-
-const readonlyRootNode = root.asReadonly();
-const baseNode = createNode();
+const baseNode = createSubscribeNode();
 ```
 
 To clean up the class, use the `destroy` method, which will perform all unsubscriptions and clear the data.
@@ -140,66 +165,117 @@ After calling destroy, subscriptions will not work.
 Nodes are used exclusively for subscriptions to root nodes.
 They do not have methods for sending events.
 
-To create a subscription to a root node, you can use the watch method,which creates a new node.
-The method accepts a transport and a namespace through which it will be accessed.
-If an empty namespace is passed, the event names will not be modified.
-If a child node other than the root is passed as a node, all subscriptions of this node will be taken.
+There are 2 ways to subscribe to root nodes: pass them during initialization or add them via the `add` method.
+Both root nodes and other nodes can be transferred.
+If another node is transferred, all root nodes are taken from it
+and the old namespaces referenced by the original node and the new one are glued together.
+If it is necessary that the events were without adding a namespace
+you need to transfer the namespace as an empty string.
+
+Examples:
 
 ```ts
 type Events1 = { event1: number }
 type Events2 = { event2: number }
 type Events3 = { event3: number }
+type Events4 = { event4: number }
 
-const root1 = createTransport<Events1>();
-const root2 = createTransport<Events2>();
-const root3 = createTransport<Events3>();
+const root1 = createTransport<Events1>({ name: 'root1' });
+const root2 = createTransport<Events2>({ name: 'root2' });
+const root3 = createTransport<Events3>({ name: 'root3' });
+const root4 = createTransport<Events3>({ name: 'root4' });
 
-const node = createNode()
-  .watch(root1, 'n1') // { 'n1:event1': number }
-  .watch(root2, 'n2') // { 'n1:event1': number; 'n2:event2': number }
-  .watch(root3, '') // { event3: number; 'n1:event1': number; 'n2:event2': number }
-
-const node2 = createNode()
-  .watch(root1, 'n1') // { 'n1:event1': number }
-  .watch(node, '') // { event: number3; 'n1:event1': number; 'n2:event2': number }
-```
-
-To access the root nodes referenced by a node there is a method `getWatchedTransports`:
-
-```ts
-const root1 = createTransport();
-const root2 = createTransport();
-const root3 = createTransport();
-
-const node = createNode()
-  .watch(root1, 'n1')
-  .watch(root2, 'n2')
-  .watch(root3, 'n2')
-
-node.getWatchedTransports() // Map({ 'n1': Set([root1]), 'n2': Set([root2, root3]) })
-```
-
-It is also possible to subscribe to several root nodes at once without multiple calls to the `watch` method.
-To do this, use the `watchTransports` method, which accepts a list of nodes as both a map and an object:
-
-```ts
-const root1 = createTransport();
-const root2 = createTransport();
-const root3 = createTransport();
-
-const node1 = createNode().watchTransports({
-  '': new Set([root1]),
-  'n1': new Set([root2, root3])
+type EventsNode1 =
+  & Events1
+  // utils type for add namespace in start event type
+  & UtilsTypeAddNamespaceToEvents<'namespace1', Events2>
+  & UtilsTypeAddNamespaceToEvents<'namespace1', Events3>;
+const node1 = createSubscribeNode<Events1>({
+  name: 'node1',
+  roots: {
+    // events without namespaces
+    '': [root1],
+    // events with namespace prefix `namespace1:event2` or `namespace1:event3` or `namespace1:*`
+    'namespace1': [root2, root3]
+  }
 });
-const node2 = createNode().watchTransports(new Map(
-  ['', new Set([root1])],
-  ['n1', new Set([root2, root3])],
-));
+
+type EventsNode2 = EventsNode1;
+const node2 = createSubscribeNode<EventsNode2>();
+node2.add('', node1);
+
+type EventsNode3 = UtilsTypeAddNamespaceToEvents<'namespace2', EventsNode2>;
+const node3 = createSubscribeNode<EventsNode3>();
+/**
+ * events:
+ * namespace2:namespace1:event2
+ * namespace2:namespace1:event3
+ * namespace2:namespace1:*
+ * namespace2:event1
+ * namespace2:*
+*/
+node3.add('namespace2', node2);
+
+type EventsNode4 = EventsNode3;
+// create with node
+const node4 = createSubscribeNode<EventsNode2>({ roots: { 'namespace2': [node3] } });
+type EventsNode5 = EventsNode4 & UtilsTypeAddNamespaceToEvents<'namespace2', Events4>;
+// create with node and root
+/**
+ * events:
+ * namespace2:namespace1:event2
+ * namespace2:namespace1:event3
+ * namespace2:namespace1:*
+ * namespace2:event1
+ * namespace2:event4
+ * namespace2:*
+*/
+const node5 = createSubscribeNode<EventsNode2>({ roots: { 'namespace2': [node4, root4] } });
 ```
 
-If there is a need for type casting, there is the `as` method, which returns the same instance, but with the required type.
+If you need to unsubscribe a node from the root node use the `remove` method.
+If subscriptions were made to root nodes via the node, they will be automatically cancelled.
+Example:
 
-If, on the contrary, we want to extract the nodes we need from the common bus, we can use the `channel` method:
+```ts
+const root1 = createTransport({ name: 'root1' });
+const root2 = createTransport({ name: 'root2' });
+const root3 = createTransport({ name: 'root3' });
+
+const node1 = createSubscribeNode({ roots: { '': [root1], 'namespace': [root2, root3] } });
+node1.getTransports(); // { '': [root1], 'namespace': [root2, root3] }
+node1.remove('namespace', root2);
+node1.getTransports(); // { '': [root1], 'namespace': [root3] }
+node1.remove('namespace', root3);
+node1.getTransports(); // { '': [root1] }
+```
+
+It is important that the add and remove methods for `add and remove` nodes modify the given instance, rather than creating a new one.
+
+To access the root nodes referenced by a node there is a method `getTransports`.
+This method is available for all nodes (including readonly), except for root nodes.
+
+Example:
+
+```ts
+const root1 = createTransport();
+const root2 = createTransport();
+const root3 = createTransport();
+
+root1.asReadonly().getTransports();
+
+const node = createSubscribeNode()
+  .add('namespace1', root1)
+  .add('namespace2', root2)
+  .add('namespace2', root3);
+
+node.getTransports(); // { 'namespace1': [root1], 'namespace2': [root2, root3] }
+node.asReadonly().getTransports(); // { 'namespace1': [root1], 'namespace2': [root2, root3] }
+```
+
+If, on the contrary, we want to extract the nodes we need from the common bus, we can use the `channel` method,
+which will allow us to obtain the nodes of the namespace we need.
+Namespaces will also be removed from event names both when receiving an event and in the Typescript type.
 
 ```ts
 type Events1 = { event1: number }
@@ -210,24 +286,32 @@ const root1 = createTransport<Events1>();
 const root2 = createTransport<Events2>();
 const root3 = createTransport<Events3>();
 
-const node = createNode()
-  .watch(root1, 'n1') // { 'n1:event1': number }
-  .watch(root2, 'n2') // { 'n1:event1': number; 'n2:event2': number }
-  .watch(root3, '') // { event3: number; 'n1:event1': number; 'n2:event2': number }
+const node1 = createSubscribeNode({ roots: { namespace1: [root1] } })
+const node2 = createSubscribeNode({ roots: { namespace1: [root2, root3], namespace2: [node1] } });
+const node3 = createSubscribeNode({ roots: { namespace2: [root2, root3, node1] } });
 
-const nodeToN1 = node.channel('n1') // { 'event1': number }
-const nodeToN1 = node.channel('') // { 'event3': number }
+node2.getTransports(); // { 'namespace1': [root2, root3], 'namespace2:namespace1': [root1] }
+node3.getTransports(); // { 'namespace2': [root2, root3], 'namespace2:namespace1': [root1] }
+
+node2.channel('namespace1').getTransports(); // { '': [root2, root3] }
+node2.channel('namespace2').getTransports(); // { 'namespace1': [root2, root3] }
+node2.channel('namespace2:namespace1').getTransports(); // { '': [root2, root3] }
+
+node3.channel('namespace2').getTransports(); // { '': [root2, root3], 'namespace1': [root1] }
 ```
 
 Subscriptions and unsubscriptions use the same methods as the root node, but the type is a template string. The following subscription formats are available:
 
-1) '*' - subscribe to all events of all root nodes
-2) event - subscribe to the event `event` of nodes that are in namespace === ''
-3) namespace:* - subscribe to all events of nodes under namespace
+1) '*' - subscribe to all events of all root nodes. If an event contains namespaces in its name,
+but they are not defined (there is no such namespace in the node list),
+then it will be considered that this is the event name and will be sent to the root nodes.
+2) event - subscribe to the event `event` of nodes that are in namespace === ''.
+3) namespace:* - subscribe to all events of nodes under namespace.
+If there are multiple namespaces that start with the one passed, then the subscription will be performed on all of them.
 4) namespace:event - subscribe to the event `event` inside namespace
 
 ```ts
-type Events1 = { event1: number }
+type Events1 = { event1: number; event1_1: number }
 type Events2 = { event2: number }
 type Events3 = { event3: number }
 
@@ -235,21 +319,49 @@ const root1 = createTransport<Events1>();
 const root2 = createTransport<Events2>();
 const root3 = createTransport<Events3>();
 
-const node = createNode()
-  .watch(root1, 'n1') // { 'n1:event1': number }
-  .watch(root2, 'n2') // { 'n1:event1': number; 'n2:event2': number }
-  .watch(root3, '') // { event3: number; 'n1:event1': number; 'n2:event2': number }
+// { event3: number; 'namespace1:event1': number; 'namespace1:event1_1': number; 'namespace2:event2': number }
+type Node =
+  & Events3
+  & UtilsTypeAddNamespaceToEvents<'namespace1', Events1>
+  & UtilsTypeAddNamespaceToEvents<'namespace2', Events2>
+const node = createSubscribeNode<Node>()
+  .add('namespace1', root1)
+  .add('namespace2', root2)
+  .add('', root3)
 
-const node1 = createNode().watch(root1, 'n1') // { 'n1:event1': number }
-const node2 = createNode().watch(node1, 'n2') // { 'n2:n1:event1': number }
+type Node1 = UtilsTypeAddNamespaceToEvents<'namespace1', Events1>;
+// { 'namespace1:event1': number; 'namespace1:event1_1': number }
+const node1 = createSubscribeNode().add('namespace1', root1)
+
+type Node2 = UtilsTypeAddNamespaceToEvents<'namespace2', Node> & UtilsTypeAddNamespaceToEvents<'namespace2', Events3>;
+// { 'namespace2:namespace1:event1': number; 'namespace2:namespace1:event1_1': number; 'namespace2:event3': number }
+const node2 = createSubscribeNode().add('namespace2', node1).add('namespace2', root3)
 
 node.on('*', () => {}) // all events
 node.on('event3', () => {}); // event3
-node.on('n1:*', () => {}); // n1:event1
-node.on('n1:event1', () => {}); // n1:event1
+node.on('namespace1:*', () => {}); // namespace1:event1 namespace1:event1_1
+node.on('namespace1:event1', () => {}); // namespace1:event1
 
 node2.on('*', () => {}) // all events
-node2.on('n2:*', () => {})
-node2.on('n2:n1:*', () => {})
-node2.on('n2:n1:event1', () => {})
+node2.on('namespace2:*', () => {})
+node2.on('namespace2:event3', () => {})
+node2.on('namespace2:namespace1:*', () => {})
+node2.on('namespace2:namespace1:event1', () => {})
+```
+
+If it is necessary for a node to be available in readonly mode, that is,
+without mechanisms for destroying and adding/removing nodes for tracking,
+and only subscription and unsubscription methods were available, then there is the `asReadonly()` method,
+which creates a small wrapper and provides only methods for subscriptions (a child instance is created).
+
+```ts
+const root1 = createTransport();
+const root2 = createTransport();
+
+const node = createSubscribeNode()
+node.add('namespace1', root1);
+
+const readonlyNode = node.asReadonly(); // on/once/off/getTransports methods and isDestroyed field
+
+node.add('namespace2', root2);
 ```
