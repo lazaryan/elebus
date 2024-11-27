@@ -296,6 +296,70 @@ describe('constructor()', () => {
     expect(mockSubscriber4.mock.calls).toHaveLength(1);
     expect(mockSubscriber4.mock.calls[0]).toEqual(['namespace2:event1', 123]);
   });
+
+  it('add readonly root node', () => {
+    const transport1 = createTransport<TestEvents>({ sync: true });
+    const transport2 = createTransport<TestEvents>({ sync: true });
+
+    const transport1Readonly = transport1.asReadonly();
+    const transport2Readonly = transport2.asReadonly();
+
+    type Node = TestEvents &
+      UtilsTypeAddNamespaceToEvents<'namespace', TestEvents>;
+
+    const node = createSubscribeNode<Node>({
+      roots: { '': [transport1Readonly], namespace: [transport2Readonly] },
+    });
+
+    const mockSubscriber1 = jest.fn();
+    const mockSubscriber2 = jest.fn();
+
+    node.on('event1', mockSubscriber1);
+    node.on('namespace:event1', mockSubscriber2);
+
+    transport1.send('event1', 123);
+    transport2.send('event1', 123);
+
+    expect(mockSubscriber1.mock.calls).toHaveLength(1);
+    expect(mockSubscriber1.mock.calls[0]).toEqual(['event1', 123]);
+
+    expect(mockSubscriber2.mock.calls).toHaveLength(1);
+    expect(mockSubscriber2.mock.calls[0]).toEqual(['namespace:event1', 123]);
+  });
+
+  it('add readonly subscribe node', () => {
+    const transport1 = createTransport<TestEvents>({ sync: true });
+    const transport2 = createTransport<TestEvents>({ sync: true });
+
+    const transport1Readonly = transport1.asReadonly();
+    const transport2Readonly = transport2.asReadonly();
+
+    type Node = TestEvents &
+      UtilsTypeAddNamespaceToEvents<'namespace', TestEvents>;
+
+    const node = createSubscribeNode<Node>({
+      roots: { '': [transport1Readonly], namespace: [transport2Readonly] },
+    });
+
+    const node2 = createSubscribeNode<Node>({
+      roots: { '': [node.asReadonly()] },
+    });
+
+    const mockSubscriber1 = jest.fn();
+    const mockSubscriber2 = jest.fn();
+
+    node2.on('event1', mockSubscriber1);
+    node2.on('namespace:event1', mockSubscriber2);
+
+    transport1.send('event1', 123);
+    transport2.send('event1', 123);
+
+    expect(mockSubscriber1.mock.calls).toHaveLength(1);
+    expect(mockSubscriber1.mock.calls[0]).toEqual(['event1', 123]);
+
+    expect(mockSubscriber2.mock.calls).toHaveLength(1);
+    expect(mockSubscriber2.mock.calls[0]).toEqual(['namespace:event1', 123]);
+  });
 });
 
 describe('add()', () => {
