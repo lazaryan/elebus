@@ -2,6 +2,14 @@
 
 JavaScript Elebus library for creating a tree-like event bus
 
+## Installation
+
+You can use the following command to install packages:
+
+```
+npm install --save elebus
+```
+
 ## Overview
 
 The library consists of 2 nodes:
@@ -395,7 +403,7 @@ type Node2 =
  * 'namespace2:namespace1:event1_1': number;
  * 'namespace2:event3': number;
 */
-const node2 = createSubscribeNode()
+const node2 = createSubscribeNode<Node2>()
   .add('namespace2', node1)
   .add('namespace2', root3);
 
