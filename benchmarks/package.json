@@ -14,7 +14,7 @@
     "start": "npm run -w elebus build && tsx ./index.ts"
   },
   "devDependencies": {
-    "tinybench": "^3.0.3",
+    "tinybench": "3.0.6",
     "tsx": "4.19.2"
   },
   "dependencies": {
