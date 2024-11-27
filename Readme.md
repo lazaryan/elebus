@@ -395,7 +395,9 @@ type Node2 =
  * 'namespace2:namespace1:event1_1': number;
  * 'namespace2:event3': number;
 */
-const node2 = createSubscribeNode().add('namespace2', node1).add('namespace2', root3)
+const node2 = createSubscribeNode()
+  .add('namespace2', node1)
+  .add('namespace2', root3);
 
 node.on('*', () => {}) // all events
 node.on('event3', () => {}); // event3
