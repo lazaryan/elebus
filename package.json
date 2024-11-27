@@ -9,6 +9,7 @@
   "bugs": "https://github.com/lazaryan/elebus/issues",
   "repository": "github:lazaryan/elebus",
   "keywords": [
+    "events",
     "eventBus",
     "event bus",
     "eventEmitter",
