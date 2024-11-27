@@ -10,7 +10,8 @@
   "repository": "github:lazaryan/elebus",
   "keywords": [
     "eventBus",
-    "signals",
+    "event bus",
+    "eventEmitter",
     "transport"
   ],
   "workspaces": [

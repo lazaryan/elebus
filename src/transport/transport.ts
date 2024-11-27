@@ -24,7 +24,7 @@ type OnceSubscribersMap = Record<Event, WeakMap<InitialAction, AbortAction>>;
 
 const lifecycleWeakMap: WeakMap<
   Transport<any>,
-  BaseEventBus<any>
+  BaseEventBus<TransportLifecycleEvents<any>>
 > = new WeakMap();
 
 export class Transport<EVENTS extends EventLike>
@@ -91,6 +91,7 @@ export class Transport<EVENTS extends EventLike>
       if (lifecycle) {
         lifecycle.send('subscribe', {
           event,
+          mode: 'on',
           subscribersCount: subscribers.size,
         });
       }
@@ -101,6 +102,7 @@ export class Transport<EVENTS extends EventLike>
       if (lifecycle) {
         lifecycle.send('subscribe', {
           event,
+          mode: 'on',
           subscribersCount: 1,
         });
       }
@@ -139,6 +141,7 @@ export class Transport<EVENTS extends EventLike>
       if (lifecycle) {
         lifecycle.send('subscribe', {
           event,
+          mode: 'once',
           subscribersCount: subscribers.size,
         });
       }
@@ -149,6 +152,7 @@ export class Transport<EVENTS extends EventLike>
       if (lifecycle) {
         lifecycle.send('subscribe', {
           event,
+          mode: 'once',
           subscribersCount: 1,
         });
       }
@@ -163,10 +167,11 @@ export class Transport<EVENTS extends EventLike>
     const subscribers = this.__subscribers[event];
     if (!subscribers || !subscribers.size) return;
 
-    if (
+    const isOnce =
       this.__onceCallbackMap[event] &&
-      this.__onceCallbackMap[event].has(callback)
-    ) {
+      this.__onceCallbackMap[event].has(callback);
+
+    if (isOnce) {
       const action = this.__onceCallbackMap[event].get(callback);
       this.__onceCallbackMap[event].delete(callback);
       if (!action) return;
@@ -187,6 +192,7 @@ export class Transport<EVENTS extends EventLike>
     if (lifecycle) {
       lifecycle.send('unubscribe', {
         event,
+        mode: isOnce ? 'once' : 'on',
         subscribersCount: subscribers.size,
       });
     }
@@ -242,9 +248,6 @@ export class Transport<EVENTS extends EventLike>
 
     const lifecycle = lifecycleWeakMap.get(this);
     if (lifecycle) {
-      for (const event in this.__subscribers) {
-        lifecycle.send('unubscribe', { event, subscribersCount: 0 });
-      }
       lifecycle.send('destroy', undefined);
       lifecycle.destroy();
     }

@@ -17,12 +17,20 @@ export type TransportLifecycleEvents<EVENTS extends EventLike> = {
    * Subscribed to some event.
    * The object indicates what event was subscribed to and whether it is the first.
    */
-  subscribe: { event: string & keyof EVENTS; subscribersCount: number };
+  subscribe: {
+    event: string & keyof EVENTS;
+    mode: 'on' | 'once';
+    subscribersCount: number;
+  };
   /**
    * Unsubscribed from some event.
    * The object indicates what event was unsubscribed from and whether there are more subscribers.
    */
-  unubscribe: { event: string & keyof EVENTS; subscribersCount: number };
+  unubscribe: {
+    event: string & keyof EVENTS;
+    mode: 'on' | 'once';
+    subscribersCount: number;
+  };
 };
 
 export type TransportOptions = {

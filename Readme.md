@@ -28,7 +28,9 @@ To determine that a node has already been destroyed in a transport, there is a p
 
 ```ts
 type Events = { event: number };
-const transport = createTransport<Events>({ name: 'root node with lifecycle' });
+const transport = createTransport<Events>({
+  name: 'root node with lifecycle',
+});
 
 transport.on('event', () => console.log('event call'));
 transport.isDestroyed // false
@@ -47,7 +49,9 @@ The methods return functions for unsubscribing from an event. Examples:
 
 ```ts
 type Events = { event1: number, event2: number };
-const transport = createTransport<Events>({ name: 'root node with subscribers' });
+const transport = createTransport<Events>({
+  name: 'root node with subscribers',
+});
 
 transport.on('*', (event, payload) => {});
 transport.on('event1', (event, payload) => {});
@@ -118,24 +122,36 @@ To track the life cycle of a node, there is a property called `lifecycle`,
 which is a minimal event bus that sends the following events:
 
 1) destroy - Root node is destroyed.
-2) subscribe - The node was subscribed to. The number of subscribers is passed to the event.
-3) unsubscribe - The node has been unsubscribed. The event is passed the number of remaining subscribers to this event.
+2) subscribe - The node was subscribed to.
+The number of subscribers is passed to the event and what type of subscriber it was: on or once.
+3) unsubscribe - The node has been unsubscribed.
+The event is passed the number of remaining subscribers to this event and what type of subscriber it was: on or once.
 
 ```ts
 type Events = { test_event: number };
 const transport = createTransport({ name: 'transport name'});
 
-transport.lifecycle.once('destroy', () => console.log('destroy node'));
-transport.lifecycle.on('subscribe', ({ event, subscribersCount }) => console.log(`subscribe ${event} ${subscribersCount}`));
-transport.lifecycle.on('unsubscribe', ({ event, subscribersCount }) => console.log(`unsubscribe ${event} ${subscribersCount}`));
+transport.lifecycle.once('destroy', () => {
+  console.log('destroy node');
+});
+transport.lifecycle.on('subscribe', ({ event, subscribersCount }) => {
+  console.log(`subscribe ${event} ${subscribersCount}`);
+});
+transport.lifecycle.on('unsubscribe', ({ event, subscribersCount }) => {
+  console.log(`unsubscribe ${event} ${subscribersCount}`);
+});
 
-const unsubscribe1 = transport.on('test_event', () => {}); // subscribe test_event 1
-const unsubscribe2 = transport.on('test_event', () => {}); // subscribe test_event 2
+const unsubscribe1 = transport.on('test_event', () => {});
+// console log: subscribe test_event 1
+const unsubscribe2 = transport.on('test_event', () => {});
+// console log: subscribe test_event 2
 
-unsubscribe1(); // unsubscribe test_event 1
-unsubscribe2(); // unsubscribe test_event 0
+unsubscribe1();
+// console log: unsubscribe test_event 1
+unsubscribe2();
+// console log: unsubscribe test_event 0
 
-transport.destroy(); // destroy node
+transport.destroy(); // console log: destroy node
 ```
 
 When the main node is destroyed, the lifecycle is also destroyed.
@@ -195,7 +211,12 @@ const node1 = createSubscribeNode<Events1>({
   roots: {
     // events without namespaces
     '': [root1],
-    // events with namespace prefix `namespace1:event2` or `namespace1:event3` or `namespace1:*`
+    /**
+     * events with namespace prefix
+     * `namespace1:event2`
+     * `namespace1:event3`
+     * `namespace1:*`
+    */
     'namespace1': [root2, root3]
   }
 });
@@ -218,8 +239,12 @@ node3.add('namespace2', node2);
 
 type EventsNode4 = EventsNode3;
 // create with node
-const node4 = createSubscribeNode<EventsNode2>({ roots: { 'namespace2': [node3] } });
-type EventsNode5 = EventsNode4 & UtilsTypeAddNamespaceToEvents<'namespace2', Events4>;
+const node4 = createSubscribeNode<EventsNode2>({
+  roots: { 'namespace2': [node3] }
+});
+type EventsNode5 =
+  & EventsNode4
+  & UtilsTypeAddNamespaceToEvents<'namespace2', Events4>;
 // create with node and root
 /**
  * events:
@@ -230,7 +255,9 @@ type EventsNode5 = EventsNode4 & UtilsTypeAddNamespaceToEvents<'namespace2', Eve
  * namespace2:event4
  * namespace2:*
 */
-const node5 = createSubscribeNode<EventsNode2>({ roots: { 'namespace2': [node4, root4] } });
+const node5 = createSubscribeNode<EventsNode2>({
+  roots: { 'namespace2': [node4, root4] }
+});
 ```
 
 If you need to unsubscribe a node from the root node use the `remove` method.
@@ -242,12 +269,20 @@ const root1 = createTransport({ name: 'root1' });
 const root2 = createTransport({ name: 'root2' });
 const root3 = createTransport({ name: 'root3' });
 
-const node1 = createSubscribeNode({ roots: { '': [root1], 'namespace': [root2, root3] } });
-node1.getTransports(); // { '': [root1], 'namespace': [root2, root3] }
+const node1 = createSubscribeNode({
+  roots: {
+    '': [root1],
+    'namespace': [root2, root3]
+  },
+});
+node1.getTransports();
+// { '': [root1], 'namespace': [root2, root3] }
 node1.remove('namespace', root2);
-node1.getTransports(); // { '': [root1], 'namespace': [root3] }
+node1.getTransports();
+// { '': [root1], 'namespace': [root3] }
 node1.remove('namespace', root3);
-node1.getTransports(); // { '': [root1] }
+node1.getTransports();
+// { '': [root1] }
 ```
 
 It is important that the add and remove methods for `add and remove` nodes modify the given instance, rather than creating a new one.
@@ -269,8 +304,10 @@ const node = createSubscribeNode()
   .add('namespace2', root2)
   .add('namespace2', root3);
 
-node.getTransports(); // { 'namespace1': [root1], 'namespace2': [root2, root3] }
-node.asReadonly().getTransports(); // { 'namespace1': [root1], 'namespace2': [root2, root3] }
+node.getTransports();
+// { 'namespace1': [root1], 'namespace2': [root2, root3] }
+node.asReadonly().getTransports();
+// { 'namespace1': [root1], 'namespace2': [root2, root3] }
 ```
 
 If, on the contrary, we want to extract the nodes we need from the common bus, we can use the `channel` method,
@@ -286,18 +323,30 @@ const root1 = createTransport<Events1>();
 const root2 = createTransport<Events2>();
 const root3 = createTransport<Events3>();
 
-const node1 = createSubscribeNode({ roots: { namespace1: [root1] } })
-const node2 = createSubscribeNode({ roots: { namespace1: [root2, root3], namespace2: [node1] } });
-const node3 = createSubscribeNode({ roots: { namespace2: [root2, root3, node1] } });
+const node1 = createSubscribeNode({
+  roots: { namespace1: [root1] }
+});
+const node2 = createSubscribeNode({
+  roots: { namespace1: [root2, root3], namespace2: [node1] }
+});
+const node3 = createSubscribeNode({
+  roots: { namespace2: [root2, root3, node1] }
+});
 
-node2.getTransports(); // { 'namespace1': [root2, root3], 'namespace2:namespace1': [root1] }
-node3.getTransports(); // { 'namespace2': [root2, root3], 'namespace2:namespace1': [root1] }
+node2.getTransports();
+// { 'namespace1': [root2, root3], 'namespace2:namespace1': [root1] }
+node3.getTransports();
+// { 'namespace2': [root2, root3], 'namespace2:namespace1': [root1] }
 
-node2.channel('namespace1').getTransports(); // { '': [root2, root3] }
-node2.channel('namespace2').getTransports(); // { 'namespace1': [root2, root3] }
-node2.channel('namespace2:namespace1').getTransports(); // { '': [root2, root3] }
+node2.channel('namespace1').getTransports();
+// { '': [root2, root3] }
+node2.channel('namespace2').getTransports();
+// { 'namespace1': [root2, root3] }
+node2.channel('namespace2:namespace1').getTransports();
+// { '': [root2, root3] }
 
-node3.channel('namespace2').getTransports(); // { '': [root2, root3], 'namespace1': [root1] }
+node3.channel('namespace2').getTransports();
+// { '': [root2, root3], 'namespace1': [root1] }
 ```
 
 Subscriptions and unsubscriptions use the same methods as the root node, but the type is a template string. The following subscription formats are available:
@@ -319,7 +368,12 @@ const root1 = createTransport<Events1>();
 const root2 = createTransport<Events2>();
 const root3 = createTransport<Events3>();
 
-// { event3: number; 'namespace1:event1': number; 'namespace1:event1_1': number; 'namespace2:event2': number }
+/**
+ * event3: number;
+ * 'namespace1:event1': number;
+ * 'namespace1:event1_1': number;
+ * 'namespace2:event2': number;
+*/
 type Node =
   & Events3
   & UtilsTypeAddNamespaceToEvents<'namespace1', Events1>
@@ -333,8 +387,14 @@ type Node1 = UtilsTypeAddNamespaceToEvents<'namespace1', Events1>;
 // { 'namespace1:event1': number; 'namespace1:event1_1': number }
 const node1 = createSubscribeNode().add('namespace1', root1)
 
-type Node2 = UtilsTypeAddNamespaceToEvents<'namespace2', Node> & UtilsTypeAddNamespaceToEvents<'namespace2', Events3>;
-// { 'namespace2:namespace1:event1': number; 'namespace2:namespace1:event1_1': number; 'namespace2:event3': number }
+type Node2 =
+  & UtilsTypeAddNamespaceToEvents<'namespace2', Node>
+  & UtilsTypeAddNamespaceToEvents<'namespace2', Events3>;
+/**
+ * 'namespace2:namespace1:event1': number;
+ * 'namespace2:namespace1:event1_1': number;
+ * 'namespace2:event3': number;
+*/
 const node2 = createSubscribeNode().add('namespace2', node1).add('namespace2', root3)
 
 node.on('*', () => {}) // all events
@@ -361,7 +421,8 @@ const root2 = createTransport();
 const node = createSubscribeNode()
 node.add('namespace1', root1);
 
-const readonlyNode = node.asReadonly(); // on/once/off/getTransports methods and isDestroyed field
+// on/once/off/getTransports methods and isDestroyed field
+const readonlyNode = node.asReadonly();
 
 node.add('namespace2', root2);
 ```
