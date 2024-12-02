@@ -147,7 +147,12 @@ describe('lifecycyle ', () => {
       expect(mockSubscriber.mock.calls).toHaveLength(1);
       expect(mockSubscriber.mock.calls[0]).toEqual([
         'subscribe',
-        { event: 'event', mode: 'on', subscribersCount: 1 },
+        {
+          event: 'event',
+          mode: 'on',
+          subscriber: mockSubscriberEvent1,
+          subscribersCount: 1,
+        },
       ]);
 
       transport.on('event', mockSubscriberEvent1);
@@ -159,7 +164,12 @@ describe('lifecycyle ', () => {
       expect(mockSubscriber.mock.calls).toHaveLength(2);
       expect(mockSubscriber.mock.calls[1]).toEqual([
         'subscribe',
-        { event: 'event', mode: 'on', subscribersCount: 2 },
+        {
+          event: 'event',
+          mode: 'on',
+          subscriber: mockSubscriberEvent2,
+          subscribersCount: 2,
+        },
       ]);
 
       unsubscriber1();
@@ -170,7 +180,12 @@ describe('lifecycyle ', () => {
       expect(mockSubscriber.mock.calls).toHaveLength(3);
       expect(mockSubscriber.mock.calls[2]).toEqual([
         'subscribe',
-        { event: 'event', mode: 'on', subscribersCount: 1 },
+        {
+          event: 'event',
+          mode: 'on',
+          subscriber: mockSubscriberEvent1,
+          subscribersCount: 1,
+        },
       ]);
 
       transport.destroy();
@@ -221,7 +236,12 @@ describe('lifecycyle ', () => {
       expect(mockSubscriber.mock.calls).toHaveLength(1);
       expect(mockSubscriber.mock.calls[0]).toEqual([
         'unubscribe',
-        { event: 'event', mode: 'on', subscribersCount: 0 },
+        {
+          event: 'event',
+          mode: 'on',
+          subscriber: mockSubscriberEvent1,
+          subscribersCount: 0,
+        },
       ]);
 
       transport.on('*', mockSubscriberEvent2);
@@ -230,7 +250,12 @@ describe('lifecycyle ', () => {
       expect(mockSubscriber.mock.calls).toHaveLength(2);
       expect(mockSubscriber.mock.calls[1]).toEqual([
         'unubscribe',
-        { event: '*', mode: 'on', subscribersCount: 0 },
+        {
+          event: '*',
+          mode: 'on',
+          subscriber: mockSubscriberEvent2,
+          subscribersCount: 0,
+        },
       ]);
 
       transport.on('event', mockSubscriberEvent1);
@@ -242,7 +267,12 @@ describe('lifecycyle ', () => {
       expect(mockSubscriber.mock.calls).toHaveLength(3);
       expect(mockSubscriber.mock.calls[2]).toEqual([
         'unubscribe',
-        { event: 'event', mode: 'on', subscribersCount: 2 },
+        {
+          event: 'event',
+          mode: 'on',
+          subscriber: mockSubscriberEvent3,
+          subscribersCount: 2,
+        },
       ]);
 
       transport.off('event', mockSubscriberEvent2);
@@ -250,7 +280,12 @@ describe('lifecycyle ', () => {
       expect(mockSubscriber.mock.calls).toHaveLength(4);
       expect(mockSubscriber.mock.calls[3]).toEqual([
         'unubscribe',
-        { event: 'event', mode: 'on', subscribersCount: 1 },
+        {
+          event: 'event',
+          mode: 'on',
+          subscriber: mockSubscriberEvent2,
+          subscribersCount: 1,
+        },
       ]);
 
       transport.off('event', mockSubscriberEvent1);
@@ -258,7 +293,12 @@ describe('lifecycyle ', () => {
       expect(mockSubscriber.mock.calls).toHaveLength(5);
       expect(mockSubscriber.mock.calls[4]).toEqual([
         'unubscribe',
-        { event: 'event', mode: 'on', subscribersCount: 0 },
+        {
+          event: 'event',
+          mode: 'on',
+          subscriber: mockSubscriberEvent1,
+          subscribersCount: 0,
+        },
       ]);
 
       transport.destroy();

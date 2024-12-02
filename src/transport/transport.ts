@@ -89,6 +89,7 @@ export class Transport<EVENTS extends EventLike>
         lifecycle.send('subscribe', {
           event,
           mode: 'on',
+          subscriber: callback,
           subscribersCount: subscribers.size,
         });
       }
@@ -99,6 +100,7 @@ export class Transport<EVENTS extends EventLike>
         lifecycle.send('subscribe', {
           event,
           mode: 'on',
+          subscriber: callback,
           subscribersCount: 1,
         });
       }
@@ -135,6 +137,7 @@ export class Transport<EVENTS extends EventLike>
         lifecycle.send('subscribe', {
           event,
           mode: 'once',
+          subscriber: callback,
           subscribersCount: subscribers.size,
         });
       }
@@ -145,6 +148,7 @@ export class Transport<EVENTS extends EventLike>
         lifecycle.send('subscribe', {
           event,
           mode: 'once',
+          subscriber: callback,
           subscribersCount: 1,
         });
       }
@@ -186,6 +190,7 @@ export class Transport<EVENTS extends EventLike>
       lifecycle.send('unubscribe', {
         event,
         mode: isOnce ? 'once' : 'on',
+        subscriber: callback,
         subscribersCount: subscribers.size,
       });
     }

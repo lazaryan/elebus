@@ -20,6 +20,15 @@ export type TransportLifecycleEvents<EVENTS extends EventLike> = {
   subscribe: {
     event: string & keyof EVENTS;
     mode: 'on' | 'once';
+    subscriber: <
+      EVENT_TYPE extends string & (keyof EVENTS | '*'),
+      EVENT extends EVENT_TYPE extends '*' ? string & keyof EVENTS : EVENT_TYPE,
+      CB extends {
+        [TYPE in EVENT]: [TYPE, EVENTS[TYPE]];
+      },
+    >(
+      ...args: CB[EVENT]
+    ) => void;
     subscribersCount: number;
   };
   /**
@@ -29,6 +38,15 @@ export type TransportLifecycleEvents<EVENTS extends EventLike> = {
   unubscribe: {
     event: string & keyof EVENTS;
     mode: 'on' | 'once';
+    subscriber: <
+      EVENT_TYPE extends string & (keyof EVENTS | '*'),
+      EVENT extends EVENT_TYPE extends '*' ? string & keyof EVENTS : EVENT_TYPE,
+      CB extends {
+        [TYPE in EVENT]: [TYPE, EVENTS[TYPE]];
+      },
+    >(
+      ...args: CB[EVENT]
+    ) => void;
     subscribersCount: number;
   };
 };
