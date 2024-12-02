@@ -19,8 +19,8 @@ import type {
 type Event = string;
 type InitialAction = (...args: any[]) => void;
 type AbortAction = (...args: any[]) => void;
-type Subscribers = Record<Event, Set<InitialAction>>;
-type OnceSubscribersMap = Record<Event, WeakMap<InitialAction, AbortAction>>;
+type Subscribers = Map<Event, Set<InitialAction>>;
+type OnceSubscribersMap = Map<Event, WeakMap<InitialAction, AbortAction>>;
 
 const lifecycleWeakMap: WeakMap<
   Transport<any>,
@@ -33,11 +33,11 @@ export class Transport<EVENTS extends EventLike>
   /**
    * @internal
    */
-  private __subscribers: Subscribers = {};
+  private __subscribers: Subscribers = new Map();
   /**
    * @internal
    */
-  private __onceCallbackMap: OnceSubscribersMap = {};
+  private __onceCallbackMap: OnceSubscribersMap = new Map();
 
   /**
    * @internal
@@ -64,15 +64,12 @@ export class Transport<EVENTS extends EventLike>
       }
     }
 
-    const lifecycleName = options?.name
-      ? `${options?.name}__lifecycle`
-      : undefined;
     const lifecycle = createBaseEventBus<TransportLifecycleEvents<EVENTS>>({
-      name: lifecycleName,
+      name: options?.name ? `${options?.name}__lifecycle` : undefined,
     });
 
     this.lifecycle = createBaseEventBusReadonly({
-      name: lifecycleName,
+      name: lifecycle.name,
       eventBus: lifecycle,
     });
     lifecycleWeakMap.set(this, lifecycle);
@@ -83,7 +80,7 @@ export class Transport<EVENTS extends EventLike>
 
     const unsubscriber = this.off.bind(this, event, callback);
 
-    const subscribers = this.__subscribers[event];
+    const subscribers = this.__subscribers.get(event);
     if (subscribers) {
       if (subscribers.has(callback)) return unsubscriber;
       subscribers.add(callback);
@@ -96,8 +93,7 @@ export class Transport<EVENTS extends EventLike>
         });
       }
     } else {
-      const subscribers = new Set([callback]);
-      this.__subscribers[event] = subscribers;
+      this.__subscribers.set(event, new Set([callback]));
       const lifecycle = lifecycleWeakMap.get(this);
       if (lifecycle) {
         lifecycle.send('subscribe', {
@@ -115,26 +111,23 @@ export class Transport<EVENTS extends EventLike>
     if (this.isDestroyed) return noopFunction;
 
     const unsubscriber = this.off.bind(this, event, callback);
-    if (
-      this.__onceCallbackMap[event] &&
-      this.__onceCallbackMap[event].has(callback)
-    )
-      return unsubscriber;
+    if (this.__onceCallbackMap.get(event)?.has(callback)) return unsubscriber;
 
     const action: AbortAction = (...args) => {
       this.off(event, callback);
       return callback(...args);
     };
 
-    if (this.__onceCallbackMap[event]) {
-      this.__onceCallbackMap[event].set(callback, action);
+    const weakMap = this.__onceCallbackMap.get(event);
+    if (weakMap) {
+      weakMap.set(callback, action);
     } else {
       const newWeakMap = new WeakMap();
       newWeakMap.set(callback, action);
-      this.__onceCallbackMap[event] = newWeakMap;
+      this.__onceCallbackMap.set(event, newWeakMap);
     }
 
-    const subscribers = this.__subscribers[event];
+    const subscribers = this.__subscribers.get(event);
     if (subscribers) {
       subscribers.add(action);
       const lifecycle = lifecycleWeakMap.get(this);
@@ -146,8 +139,7 @@ export class Transport<EVENTS extends EventLike>
         });
       }
     } else {
-      const subscribers = new Set([action]);
-      this.__subscribers[event] = subscribers;
+      this.__subscribers.set(event, new Set([action]));
       const lifecycle = lifecycleWeakMap.get(this);
       if (lifecycle) {
         lifecycle.send('subscribe', {
@@ -164,27 +156,28 @@ export class Transport<EVENTS extends EventLike>
   public off(event: string, callback: InitialAction): void {
     if (this.isDestroyed) return;
 
-    const subscribers = this.__subscribers[event];
+    const subscribers = this.__subscribers.get(event);
     if (!subscribers || !subscribers.size) return;
 
-    const isOnce =
-      this.__onceCallbackMap[event] &&
-      this.__onceCallbackMap[event].has(callback);
+    const isOnce = this.__onceCallbackMap.get(event)?.has(callback);
 
     if (isOnce) {
-      const action = this.__onceCallbackMap[event].get(callback);
-      this.__onceCallbackMap[event].delete(callback);
+      const actioions = this.__onceCallbackMap.get(event);
+      if (!actioions) return;
+
+      const action = actioions.get(callback);
+      actioions.delete(callback);
       if (!action) return;
 
       subscribers.delete(action);
       if (!subscribers.size) {
-        delete this.__subscribers[event];
-        delete this.__onceCallbackMap[event];
+        this.__subscribers.delete(event);
+        this.__onceCallbackMap.delete(event);
       }
     } else {
       subscribers.delete(callback);
       if (!subscribers.size) {
-        delete this.__subscribers[event];
+        this.__subscribers.delete(event);
       }
     }
 
@@ -201,8 +194,8 @@ export class Transport<EVENTS extends EventLike>
   public send(...args: any[]): void {
     if (this.isDestroyed) return;
 
-    const subscribersEvent = this.__subscribers[args[0]];
-    const subscribersAllEvent = this.__subscribers['*'];
+    const subscribersEvent = this.__subscribers.get(args[0]);
+    const subscribersAllEvent = this.__subscribers.get('*');
     if (!subscribersEvent?.size && !subscribersAllEvent?.size) return;
 
     if (this.sync) {
@@ -218,7 +211,7 @@ export class Transport<EVENTS extends EventLike>
       }
     } else {
       if (subscribersEvent?.size) {
-        Promise.resolve().then(() => {
+        queueMicrotask(() => {
           if (subscribersEvent?.size) {
             for (const subscriber of subscribersEvent) {
               subscriber(...args);
@@ -227,7 +220,7 @@ export class Transport<EVENTS extends EventLike>
         });
       }
       if (subscribersAllEvent?.size) {
-        Promise.resolve().then(() => {
+        queueMicrotask(() => {
           if (subscribersAllEvent?.size) {
             for (const subscriber of subscribersAllEvent) {
               subscriber(...args);
@@ -255,12 +248,12 @@ export class Transport<EVENTS extends EventLike>
     lifecycleWeakMap.delete(this);
 
     setTimeout(() => {
-      this.__onceCallbackMap = {};
+      this.__onceCallbackMap.clear();
 
-      for (const event in this.__subscribers) {
-        this.__subscribers[event].clear();
+      for (const subscriber of this.__subscribers) {
+        subscriber[1].clear();
       }
-      this.__subscribers = {};
+      this.__subscribers.clear();
     }, 0);
   }
 }

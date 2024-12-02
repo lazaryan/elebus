@@ -11,13 +11,15 @@
   "repository": "github:lazaryan/elebus",
   "scripts": {
     "clean": "rm -rf build coverage dist",
-    "start": "npm run -w elebus build && tsx ./index.ts"
+    "start": "npm run -w elebus build && tsx --max-old-space-size=8192 ./index.ts"
   },
   "devDependencies": {
     "tinybench": "3.0.6",
     "tsx": "4.19.2"
   },
   "dependencies": {
-    "nrgy": "0.0.45"
+    "nrgy": "0.0.45",
+    "rxjs": "7.8.1",
+    "rx-effects": "1.1.2"
   }
 }

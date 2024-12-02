@@ -40,12 +40,11 @@ export class BaseEventBus<EVENTS extends EventLike>
   public on(event: string, callback: InitialAction): Unscubscriber {
     if (this.isDestroyed) return noopFunction;
 
-    let subscribers = this.__subscribers[event];
+    const subscribers = this.__subscribers[event];
     if (subscribers) {
       subscribers.add(callback);
     } else {
-      subscribers = new Set([callback]);
-      this.__subscribers[event] = subscribers;
+      this.__subscribers[event] = new Set([callback]);
     }
 
     return this.off.bind(this, event, callback);
@@ -64,12 +63,11 @@ export class BaseEventBus<EVENTS extends EventLike>
       return callback(...args);
     };
 
-    let subscribers = this.__subscribers[event];
+    const subscribers = this.__subscribers[event];
     if (subscribers) {
       subscribers.add(action);
     } else {
-      subscribers = new Set([action]);
-      this.__subscribers[event] = subscribers;
+      this.__subscribers[event] = new Set([action]);
     }
 
     if (this.__onceCallbackMap[event]) {
@@ -116,7 +114,7 @@ export class BaseEventBus<EVENTS extends EventLike>
     const subscribers = this.__subscribers[type];
     if (!subscribers || !subscribers.size) return;
 
-    Promise.resolve().then(() => {
+    queueMicrotask(() => {
       for (const subscriber of subscribers) {
         subscriber(type, ...args);
       }
