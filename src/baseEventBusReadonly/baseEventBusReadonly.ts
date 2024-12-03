@@ -25,10 +25,6 @@ export class BaseEventBusReadonly<EVENTS extends EventLike>
     return this.__eventBus.on(type, callback);
   }
 
-  public once(type: string, callback: (...args: any[]) => void): Unscubscriber {
-    return this.__eventBus.once(type, callback);
-  }
-
   public off(type: string, callback: (...args: any[]) => void): void {
     return this.__eventBus.off(type, callback);
   }

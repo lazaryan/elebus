@@ -36,34 +36,6 @@ export interface BaseEventBusSubscriber<EVENTS extends EventLike> {
     callback: (event: EVENT, payload: EVENTS[EVENT]) => void,
   ): Unscubscriber;
   /**
-   * A method for one-time subscription to bus events.
-   * In addition to events of the type, you can also specify an event *,
-   * which will allow you to subscribe to all bus events.
-   * The method returns a function for unsubscribing the callback
-   * (this can also be done via the off or removeEventListener methods).
-   *
-   * If the onSubscribe lifecycle method is passed,
-   * it will be called when this event is sent.
-   *
-   * If the transport was destroyed, this method will do nothing.
-   *
-   * @example
-   * ```ts
-   * type Events = { event: string };
-   * const eventBus = createBaseEventBus<Events>();
-   *
-   * const unsubscriber = eventBus.once('event', (event, payload) => console.log(payload));
-   * unsubscriber();
-   *
-   * eventBus.send('event', 'test');
-   * eventBus.send('event', 'test'); // not call subscribers
-   * ```
-   */
-  once<EVENT extends string & keyof EVENTS>(
-    event: EVENT,
-    callback: (event: EVENT, payload: EVENTS[EVENT]) => void,
-  ): Unscubscriber;
-  /**
    * unsubscribe from an event.
    * If there are no subscribers left for the event, we remove it from the map.
    *

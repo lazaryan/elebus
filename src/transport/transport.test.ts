@@ -47,36 +47,11 @@ describe('lifecycyle ', () => {
       expect(mockSubscriber.mock.calls[0]).toEqual(['destroy', undefined]);
     });
 
-    it('destroy event for once', async () => {
-      const transport = createTransport<{ event: number }>();
-      const mockSubscriber = jest.fn();
-
-      transport.lifecycle.once('destroy', mockSubscriber);
-      transport.destroy();
-
-      await flushMicrotasks();
-      expect(mockSubscriber.mock.calls).toHaveLength(1);
-      expect(mockSubscriber.mock.calls[0]).toEqual(['destroy', undefined]);
-    });
-
     it('not double send event for on', async () => {
       const transport = createTransport<{ event: number }>();
       const mockSubscriber = jest.fn();
 
       transport.lifecycle.on('destroy', mockSubscriber);
-      transport.destroy();
-      transport.destroy();
-
-      await flushMicrotasks();
-      expect(mockSubscriber.mock.calls).toHaveLength(1);
-      expect(mockSubscriber.mock.calls[0]).toEqual(['destroy', undefined]);
-    });
-
-    it('not double send event for once', async () => {
-      const transport = createTransport<{ event: number }>();
-      const mockSubscriber = jest.fn();
-
-      transport.lifecycle.once('destroy', mockSubscriber);
       transport.destroy();
       transport.destroy();
 
@@ -109,23 +84,11 @@ describe('lifecycyle ', () => {
       expect(mockSubscriber.mock.calls).toHaveLength(0);
     });
 
-    it('unsubscribe once event', async () => {
-      const transport = createTransport<{ event: number }>();
-      const mockSubscriber = jest.fn();
-
-      const unsubscribe = transport.lifecycle.once('destroy', mockSubscriber);
-      unsubscribe();
-      transport.destroy();
-
-      await flushMicrotasks();
-      expect(mockSubscriber.mock.calls).toHaveLength(0);
-    });
-
     it('unsubscribe on event for off', async () => {
       const transport = createTransport<{ event: number }>();
       const mockSubscriber = jest.fn();
 
-      transport.lifecycle.once('destroy', mockSubscriber);
+      transport.lifecycle.on('destroy', mockSubscriber);
       transport.lifecycle.off('destroy', mockSubscriber);
       transport.destroy();
 
