@@ -65,25 +65,43 @@ export class SubscriberNode<EVENTS extends EventLike>
       }
 
       if (options.roots) {
-        const parsedRoots = parseOptionsRoots(options.roots);
-        this.__roots = parsedRoots;
+        this.__roots = parseOptionsRoots(options.roots);
 
-        for (const namespace in parsedRoots) {
-          const roots = parsedRoots[namespace];
+        queueMicrotask(() => {
+          if (this.isDestroyed) return;
 
-          const destroySubscribers = new Map();
-          this.__destroySubscribers[namespace] = destroySubscribers;
+          for (const namespace in this.__roots) {
+            const roots = this.__roots[namespace];
 
-          for (const root of roots) {
-            destroySubscribers.set(
-              root,
-              root.lifecycle.on(
-                'destroy',
-                this.remove.bind(this, namespace, root),
-              ),
-            );
+            const destroySubscribers = new Map();
+
+            for (const root of roots) {
+              if (root.isDestroyed) {
+                const index = this.__roots[namespace].indexOf(root);
+                if (index === -1) continue;
+
+                this.__roots[namespace].splice(index, 1);
+                if (!this.__roots[namespace].length) {
+                  delete this.__roots[namespace];
+                }
+
+                continue;
+              }
+
+              destroySubscribers.set(
+                root,
+                root.lifecycle.on(
+                  'destroy',
+                  this.remove.bind(this, namespace, root),
+                ),
+              );
+            }
+
+            if (destroySubscribers.size) {
+              this.__destroySubscribers[namespace] = destroySubscribers;
+            }
           }
-        }
+        });
       }
     }
   }

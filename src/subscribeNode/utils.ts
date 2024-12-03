@@ -33,9 +33,10 @@ export function parseOptionsRoots(
 
     for (const node of namespaceRoots) {
       if (node.__isRoot) {
-        if (resultRoots[namespace].includes(node)) continue;
+        if (node.isDestroyed || resultRoots[namespace].includes(node)) continue;
         resultRoots[namespace].push(node);
       } else {
+        if (node.isDestroyed) continue;
         const allNodeRoots = node.getTransports();
 
         for (const rootNamespace in allNodeRoots) {
@@ -46,7 +47,8 @@ export function parseOptionsRoots(
           }
 
           for (const root of roots) {
-            if (resultRoots[mergedNamespace].includes(root)) continue;
+            if (root.isDestroyed || resultRoots[mergedNamespace].includes(root))
+              continue;
             resultRoots[mergedNamespace].push(root);
           }
         }
