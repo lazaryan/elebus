@@ -139,7 +139,7 @@ The event is passed the number of remaining subscribers to this event and what t
 type Events = { test_event: number };
 const transport = createTransport({ name: 'transport name'});
 
-transport.lifecycle.once('destroy', () => {
+transport.lifecycle.on('destroy', () => {
   console.log('destroy node');
 });
 transport.lifecycle.on('subscribe', ({ event, subscribersCount }) => {
