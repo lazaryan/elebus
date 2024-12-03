@@ -35,7 +35,7 @@ export type TransportLifecycleEvents<EVENTS extends EventLike> = {
    * Unsubscribed from some event.
    * The object indicates what event was unsubscribed from and whether there are more subscribers.
    */
-  unubscribe: {
+  unsubscribe: {
     event: string & keyof EVENTS;
     mode: 'on' | 'once';
     subscriber: <

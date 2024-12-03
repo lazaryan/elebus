@@ -228,14 +228,14 @@ describe('lifecycyle ', () => {
       const mockSubscriberEvent2 = jest.fn();
       const mockSubscriberEvent3 = jest.fn();
 
-      transport.lifecycle.on('unubscribe', mockSubscriber);
+      transport.lifecycle.on('unsubscribe', mockSubscriber);
       transport.on('event', mockSubscriberEvent1);
       transport.off('event', mockSubscriberEvent1);
 
       await flushMicrotasks();
       expect(mockSubscriber.mock.calls).toHaveLength(1);
       expect(mockSubscriber.mock.calls[0]).toEqual([
-        'unubscribe',
+        'unsubscribe',
         {
           event: 'event',
           mode: 'on',
@@ -249,7 +249,7 @@ describe('lifecycyle ', () => {
       await flushMicrotasks();
       expect(mockSubscriber.mock.calls).toHaveLength(2);
       expect(mockSubscriber.mock.calls[1]).toEqual([
-        'unubscribe',
+        'unsubscribe',
         {
           event: '*',
           mode: 'on',
@@ -266,7 +266,7 @@ describe('lifecycyle ', () => {
       await flushMicrotasks();
       expect(mockSubscriber.mock.calls).toHaveLength(3);
       expect(mockSubscriber.mock.calls[2]).toEqual([
-        'unubscribe',
+        'unsubscribe',
         {
           event: 'event',
           mode: 'on',
@@ -279,7 +279,7 @@ describe('lifecycyle ', () => {
       await flushMicrotasks();
       expect(mockSubscriber.mock.calls).toHaveLength(4);
       expect(mockSubscriber.mock.calls[3]).toEqual([
-        'unubscribe',
+        'unsubscribe',
         {
           event: 'event',
           mode: 'on',
@@ -292,7 +292,7 @@ describe('lifecycyle ', () => {
       await flushMicrotasks();
       expect(mockSubscriber.mock.calls).toHaveLength(5);
       expect(mockSubscriber.mock.calls[4]).toEqual([
-        'unubscribe',
+        'unsubscribe',
         {
           event: 'event',
           mode: 'on',

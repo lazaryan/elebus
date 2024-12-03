@@ -187,7 +187,7 @@ export class Transport<EVENTS extends EventLike>
 
     const lifecycle = lifecycleWeakMap.get(this);
     if (lifecycle) {
-      lifecycle.send('unubscribe', {
+      lifecycle.send('unsubscribe', {
         event,
         mode: isOnce ? 'once' : 'on',
         subscriber: callback,
