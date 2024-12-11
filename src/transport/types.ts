@@ -1,11 +1,6 @@
-import type { BaseEventBusReadonly } from '../baseEventBusReadonly';
-import type { TransportReadonlyNode } from '../transportReadonlyNode';
-import type {
-  BaseTransportRoot,
-  DestroyedNode,
-  EventLike,
-  Unscubscriber,
-} from '../types';
+import type { BaseEventBusReadonly } from '../baseEventBus';
+import type { TransportRootBase, TransportRootSubscribers } from '../rootTypes';
+import type { BaseTransportNodeReadonly, EventLike } from '../types';
 
 export type TransportLifecycleEvents<EVENTS extends EventLike> = {
   /**
@@ -20,15 +15,7 @@ export type TransportLifecycleEvents<EVENTS extends EventLike> = {
   subscribe: {
     event: string & keyof EVENTS;
     mode: 'on' | 'once';
-    subscriber: <
-      EVENT_TYPE extends string & (keyof EVENTS | '*'),
-      EVENT extends EVENT_TYPE extends '*' ? string & keyof EVENTS : EVENT_TYPE,
-      CB extends {
-        [TYPE in EVENT]: [TYPE, EVENTS[TYPE]];
-      },
-    >(
-      ...args: CB[EVENT]
-    ) => void;
+    subscriber: Parameters<TransportRootSubscribers<EVENTS>['on']>[1];
     subscribersCount: number;
   };
   /**
@@ -38,15 +25,7 @@ export type TransportLifecycleEvents<EVENTS extends EventLike> = {
   unsubscribe: {
     event: string & keyof EVENTS;
     mode: 'on' | 'once';
-    subscriber: <
-      EVENT_TYPE extends string & (keyof EVENTS | '*'),
-      EVENT extends EVENT_TYPE extends '*' ? string & keyof EVENTS : EVENT_TYPE,
-      CB extends {
-        [TYPE in EVENT]: [TYPE, EVENTS[TYPE]];
-      },
-    >(
-      ...args: CB[EVENT]
-    ) => void;
+    subscriber: Parameters<TransportRootSubscribers<EVENTS>['off']>[1];
     subscribersCount: number;
   };
 };
@@ -66,107 +45,8 @@ export type TransportOptions = {
   sync?: boolean;
 };
 
-export interface TransportRootSubscribers<EVENTS extends EventLike> {
-  /**
-   * Method for subscribing to bus events.
-   * In addition to events of the type, you can also specify the * event,
-   * which will allow you to subscribe to all bus events.
-   * The method returns a function for unsubscribing the callback
-   * (this can also be done via the off or removeEventListener methods).
-   *
-   * If the onSubscribe lifecycle method is passed,
-   * it will be called when this event is sent.
-   *
-   * If the transport was destroyed, this method will do nothing.
-   *
-   * @example
-   * ```ts
-   * type Events = { event: string };
-   * const transport = createTransport<Events>();
-   *
-   * transport.on('event', (event, payload) => console.log(payload));
-   * const unsubscriber = transport.on('*', (event, payload) => console.log(payload));
-   * unsubscriber();
-   *
-   * transport.send('event', 'test');
-   * ```
-   */
-  on<
-    EVENT_TYPE extends string & (keyof EVENTS | '*'),
-    EVENT extends EVENT_TYPE extends '*' ? string & keyof EVENTS : EVENT_TYPE,
-    CB extends {
-      [TYPE in EVENT]: [TYPE, EVENTS[TYPE]];
-    },
-  >(
-    event: EVENT_TYPE,
-    callback: (...args: CB[EVENT]) => void,
-  ): Unscubscriber;
-  /**
-   * A method for one-time subscription to bus events.
-   * In addition to events of the type, you can also specify an event *,
-   * which will allow you to subscribe to all bus events.
-   * The method returns a function for unsubscribing the callback
-   * (this can also be done via the off or removeEventListener methods).
-   *
-   * If the onSubscribe lifecycle method is passed,
-   * it will be called when this event is sent.
-   *
-   * If the transport was destroyed, this method will do nothing.
-   *
-   * @example
-   * ```ts
-   * type Events = { event: string };
-   * const transport = createTransport<Events>();
-   *
-   * transport.once('event', (event, payload) => console.log(payload));
-   * const unsubscriber = transport.once('*', (event, payload) => console.log(payload));
-   * unsubscriber();
-   *
-   * transport.send('event', 'test');
-   * transport.send('event', 'test'); // not call subscribers
-   * ```
-   */
-  once<
-    EVENT_TYPE extends string & (keyof EVENTS | '*'),
-    EVENT extends EVENT_TYPE extends '*' ? string & keyof EVENTS : EVENT_TYPE,
-    CB extends {
-      [TYPE in EVENT]: [TYPE, EVENTS[TYPE]];
-    },
-  >(
-    event: EVENT_TYPE,
-    callback: (...args: CB[EVENT]) => void,
-  ): Unscubscriber;
-  /**
-   * unsubscribe from an event.
-   * If there are no subscribers left for the event, we remove it from the map.
-   *
-   * If the onUnsubscribe lifecycle callback is passed,
-   * it will be called each time this function is called.
-   *
-   * If the transport was destroyed, the method does not work.
-   *
-   * @example
-   * ```ts
-   * type Events = { event: string };
-   * const transport = createTransport<Events>();
-   *
-   * function handler(type: string, payload: string): void {}
-   *
-   * transport.on('event', handler);
-   * transport.off('event', handler);
-   * ```
-   */
-  off<EVENT_TYPE extends string & (keyof EVENTS | '*')>(
-    event: EVENT_TYPE,
-    callback: (...args: any[]) => void,
-  ): void;
-}
-
-type TransportRootSubscribersExtends<EVENTS extends EventLike> =
-  TransportRootSubscribers<EVENTS> & DestroyedNode & BaseTransportRoot;
-
 export interface TransportRoot<EVENTS extends EventLike>
-  extends TransportRootSubscribersExtends<EVENTS> {
+  extends TransportRootBase<EVENTS> {
   /**
    * Transport name
    */
@@ -247,4 +127,14 @@ export interface TransportRoot<EVENTS extends EventLike>
    * for direct control of transport state from the outside.
    */
   asReadonly(): TransportReadonlyNode<EVENTS>;
+}
+
+type TransportReadonlyNodeBase<EVENTS extends EventLike> =
+  TransportRootSubscribers<EVENTS> & BaseTransportNodeReadonly;
+
+export interface TransportReadonlyNode<EVENTS extends EventLike>
+  extends TransportReadonlyNodeBase<EVENTS> {
+  name?: string;
+
+  lifecycle: TransportRoot<EVENTS>['lifecycle'];
 }

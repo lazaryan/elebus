@@ -5,10 +5,14 @@ export type EventLike = Record<string, unknown>;
 /**
  * unsubscribe function to unsubscribe from an event.
  */
-export type Unscubscriber = () => void;
+export type Unsubscriber = () => void;
+
+export type AnyFunction = (...args: any[]) => void;
 
 export type Namespace = string;
 export type TransportRootNodes = Record<Namespace, Array<TransportRoot<any>>>;
+
+export type TimeoutRef = ReturnType<typeof setTimeout>;
 
 export interface DestroyedNode {
   isDestroyed: boolean;
@@ -16,14 +20,26 @@ export interface DestroyedNode {
   destroy(): void;
 }
 
-export interface BaseTransportRoot {
+export interface BaseTransportRoot extends DestroyedNode {
   /**
    * @internal
    */
   __isRoot: Readonly<true>;
 }
 
-export interface BaseTransportNode {
+export interface BaseTransportNode extends DestroyedNode {
+  /**
+   * @internal
+   */
+  __isRoot: Readonly<false>;
+
+  /**
+   * Method to get the root node object referenced by the node.
+   */
+  getTransports: () => TransportRootNodes;
+}
+
+export interface BaseTransportNodeReadonly {
   /**
    * @internal
    */

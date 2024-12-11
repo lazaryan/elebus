@@ -546,6 +546,7 @@ describe('once()', () => {
 
     transport.once('event', mockSubscriber);
     transport.send('event', 123);
+    await flushMicrotasks();
     transport.send('event', 123);
 
     await flushMicrotasks();
@@ -631,9 +632,9 @@ describe('once()', () => {
 
     transport.once('*', mockSubscriber);
     transport.send('event', 123);
+    await flushMicrotasks();
     transport.send('event', 123);
 
-    await flushMicrotasks();
     await flushMicrotasks();
     expect(mockSubscriber.mock.calls).toHaveLength(1);
     expect(mockSubscriber.mock.calls[0]).toEqual(['event', 123]);

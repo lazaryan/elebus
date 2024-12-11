@@ -4,4 +4,4 @@ export async function flushMicrotasks(timeout = 0): Promise<void> {
   );
 }
 
-export function noopFunction(): void {}
+export const noopFunction = () => {};

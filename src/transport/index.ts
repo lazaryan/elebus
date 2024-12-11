@@ -1,7 +1,7 @@
 export { createTransport } from './helper';
 export type {
   TransportLifecycleEvents,
-  TransportRootSubscribers,
   TransportOptions,
   TransportRoot,
+  TransportReadonlyNode,
 } from './types';

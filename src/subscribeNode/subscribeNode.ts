@@ -1,15 +1,13 @@
-import {
-  createSubscribeReadonlyNode,
-  type SubscribeReadonlyNode,
-} from '../subscribeReadonlyNode';
 import type { TransportRoot } from '../transport';
-import type { EventLike, TransportRootNodes, Unscubscriber } from '../types';
+import type { EventLike, TransportRootNodes, Unsubscriber } from '../types';
 import { noopFunction } from '../utils';
 
+import { createSubscribeReadonlyNode } from './subscribeNodeReadonly';
 import type {
   Namespace,
   SubscribeNode as SubscribeNodeImpl,
   SubscribeNodeOptions,
+  SubscribeReadonlyNode,
   Type,
 } from './types';
 import {
@@ -20,7 +18,7 @@ import {
 
 type Subsciber = (...args: any[]) => void;
 
-type SubscriberRootsMap = Map<TransportRoot<any>, Unscubscriber>;
+type SubscriberRootsMap = Map<TransportRoot<any>, Unsubscriber>;
 
 type SubscriberInfo = {
   mode: 'on' | 'once';
@@ -33,7 +31,7 @@ type SubscribersTypes = Record<Type, SubscribersTypesMap>;
 
 type SubscribersNamespaces = Record<Namespace, SubscribersTypes>;
 
-type DestroySubscribers = Map<TransportRoot<any>, Unscubscriber>;
+type DestroySubscribers = Map<TransportRoot<any>, Unsubscriber>;
 
 export class SubscriberNode<EVENTS extends EventLike>
   implements SubscribeNodeImpl<EVENTS>
@@ -50,13 +48,13 @@ export class SubscriberNode<EVENTS extends EventLike>
    * @internal
    */
   private __destroySubscribers: Record<Namespace, DestroySubscribers> = {};
-
-  public isDestroyed = false;
-  public readonly name: string | undefined = undefined;
   /**
    * @internal
    */
-  public readonly __isRoot: false = false as const;
+  public readonly __isRoot: Readonly<false> = false as const;
+
+  public isDestroyed: boolean = false;
+  public readonly name: string | undefined = undefined;
 
   constructor(options?: SubscribeNodeOptions) {
     if (options) {
@@ -67,7 +65,7 @@ export class SubscriberNode<EVENTS extends EventLike>
       if (options.roots) {
         this.__roots = parseOptionsRoots(options.roots);
 
-        queueMicrotask(() => {
+        setTimeout(() => {
           if (this.isDestroyed) return;
 
           for (const namespace in this.__roots) {
@@ -77,11 +75,11 @@ export class SubscriberNode<EVENTS extends EventLike>
 
             for (const root of roots) {
               if (root.isDestroyed) {
-                const index = this.__roots[namespace].indexOf(root);
+                const index = roots.indexOf(root);
                 if (index === -1) continue;
 
-                this.__roots[namespace].splice(index, 1);
-                if (!this.__roots[namespace].length) {
+                roots.splice(index, 1);
+                if (!roots.length) {
                   delete this.__roots[namespace];
                 }
 
@@ -90,9 +88,8 @@ export class SubscriberNode<EVENTS extends EventLike>
 
               destroySubscribers.set(
                 root,
-                root.lifecycle.on(
-                  'destroy',
-                  this.remove.bind(this, namespace, root),
+                root.lifecycle.on('destroy', () =>
+                  this.remove(namespace, root),
                 ),
               );
             }
@@ -101,7 +98,7 @@ export class SubscriberNode<EVENTS extends EventLike>
               this.__destroySubscribers[namespace] = destroySubscribers;
             }
           }
-        });
+        }, 0);
       }
     }
   }
@@ -129,7 +126,7 @@ export class SubscriberNode<EVENTS extends EventLike>
     if (!destroySubscribers.has(root)) {
       destroySubscribers.set(
         root,
-        root.lifecycle.on('destroy', this.remove.bind(this, namespace, root)),
+        root.lifecycle.on('destroy', () => this.remove(namespace, root)),
       );
     }
 
@@ -171,12 +168,11 @@ export class SubscriberNode<EVENTS extends EventLike>
   }
 
   public remove(namespace: Namespace, root: TransportRoot<any>): void {
-    if (root.isDestroyed) return;
-    if (!this.__roots[namespace]) return;
+    const roots = this.__roots[namespace];
+    if (!roots || !roots.includes(root)) return;
 
-    if (this.__destroySubscribers[namespace]) {
-      const destroySubscribers = this.__destroySubscribers[namespace];
-
+    const destroySubscribers = this.__destroySubscribers[namespace];
+    if (destroySubscribers) {
       if (destroySubscribers.has(root)) {
         destroySubscribers.get(root)?.();
         destroySubscribers.delete(root);
@@ -187,10 +183,10 @@ export class SubscriberNode<EVENTS extends EventLike>
       }
     }
 
-    const index = this.__roots[namespace].indexOf(root);
+    const index = roots.indexOf(root);
     if (index === -1) return;
-    this.__roots[namespace].splice(index, 1);
-    if (!this.__roots[namespace].length) {
+    roots.splice(index, 1);
+    if (!roots.length) {
       delete this.__roots[namespace];
     }
 
@@ -236,7 +232,7 @@ export class SubscriberNode<EVENTS extends EventLike>
     return createSubscribeReadonlyNode(this);
   }
 
-  public on(type: string, callback: (...args: any[]) => void): Unscubscriber {
+  public on(type: string, callback: (...args: any[]) => void): Unsubscriber {
     if (this.isDestroyed) return noopFunction;
 
     const unsubscribers: Array<SubscriberRootsMap> = [];
@@ -244,12 +240,9 @@ export class SubscriberNode<EVENTS extends EventLike>
     const subscribers = getSubscribers(type, Object.keys(this.__roots));
 
     for (const { namespace, event } of subscribers) {
-      if (
-        this.__subscribers[namespace] &&
-        this.__subscribers[namespace][event] &&
-        this.__subscribers[namespace][event].has(callback)
-      )
+      if (this.__subscribers[namespace]?.[event]?.has(callback)) {
         continue;
+      }
 
       const subscriberInfo: SubscriberInfo = {
         mode: 'on',
@@ -279,8 +272,8 @@ export class SubscriberNode<EVENTS extends EventLike>
         this.__subscribers[namespace] = { [event]: newMap };
       }
 
-      if (this.__roots[namespace]) {
-        const roots = this.__roots[namespace];
+      const roots = this.__roots[namespace];
+      if (roots) {
         for (const root of roots) {
           subscriberInfo.roots.set(root, root.on(event, action));
         }
@@ -296,20 +289,17 @@ export class SubscriberNode<EVENTS extends EventLike>
     };
   }
 
-  public once(type: string, callback: (...args: any[]) => void): Unscubscriber {
+  public once(type: string, callback: (...args: any[]) => void): Unsubscriber {
     if (this.isDestroyed) return noopFunction;
 
     const subscribers = getSubscribers(type, Object.keys(this.__roots));
 
-    let unscubscribers: Record<Namespace, SubscriberRootsMap> = {};
+    let unsubscribers: Record<Namespace, SubscriberRootsMap> = {};
 
     for (const { namespace, event } of subscribers) {
-      if (
-        this.__subscribers[namespace] &&
-        this.__subscribers[namespace][event] &&
-        this.__subscribers[namespace][event].has(callback)
-      )
+      if (this.__subscribers[namespace]?.[event]?.has(callback)) {
         continue;
+      }
 
       const subscriberInfo: SubscriberInfo = {
         mode: 'once',
@@ -330,17 +320,15 @@ export class SubscriberNode<EVENTS extends EventLike>
         this.__subscribers[namespace] = { [event]: newMap };
       }
 
-      if (!this.__roots[namespace]) continue;
-
       const roots = this.__roots[namespace];
-      if (!roots.length) continue;
+      if (!roots || !roots.length) continue;
 
       const subscribersNamespace = this.__subscribers[namespace];
       if (!subscribersNamespace) {
         this.__subscribers[namespace] = {};
       }
 
-      unscubscribers[namespace] = subscriberInfo.roots;
+      unsubscribers[namespace] = subscriberInfo.roots;
 
       for (const root of roots) {
         const action = (type: string, ...other: any[]): void => {
@@ -349,7 +337,7 @@ export class SubscriberNode<EVENTS extends EventLike>
 
           subscriberInfo.roots.delete(root);
           if (!subscriberInfo.roots.size) {
-            delete unscubscribers[namespace];
+            delete unsubscribers[namespace];
           }
         };
 
@@ -358,9 +346,9 @@ export class SubscriberNode<EVENTS extends EventLike>
     }
 
     return () => {
-      for (const namespace in unscubscribers) {
-        const unsubscribersMap = unscubscribers[namespace];
-        delete unscubscribers[namespace];
+      for (const namespace in unsubscribers) {
+        const unsubscribersMap = unsubscribers[namespace];
+        delete unsubscribers[namespace];
         if (!unsubscribersMap || !unsubscribersMap.size) continue;
 
         for (const item of unsubscribersMap) {
@@ -369,7 +357,7 @@ export class SubscriberNode<EVENTS extends EventLike>
         unsubscribersMap.clear();
       }
 
-      unscubscribers = {};
+      unsubscribers = {};
     };
   }
 
@@ -378,9 +366,7 @@ export class SubscriberNode<EVENTS extends EventLike>
 
     const subscribers = getSubscribers(type, Object.keys(this.__roots));
     for (const { namespace, event } of subscribers) {
-      if (!this.__subscribers[namespace]) continue;
-      if (!this.__subscribers[namespace][event]) continue;
-      if (!this.__subscribers[namespace][event].has(callback)) continue;
+      if (!this.__subscribers[namespace]?.[event]?.has(callback)) continue;
 
       const subscribersEvent = this.__subscribers[namespace][event];
       if (!subscribersEvent.size) continue;

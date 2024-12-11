@@ -1,6 +1,7 @@
 export type {
   BaseEventBus,
   BaseEventBusOptions,
+  BaseEventBusReadonly,
   BaseEventBusSubscriber,
 } from './types';
-export { createBaseEventBus } from './helper';
+export { createBaseEventBus, createBaseEventBusReadonly } from './helper';

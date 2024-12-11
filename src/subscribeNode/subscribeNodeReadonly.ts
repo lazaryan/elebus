@@ -1,9 +1,11 @@
-import type { SubscribeNode } from '../subscribeNode';
-import type { EventLike, Unscubscriber } from '../types';
+import type { EventLike, Unsubscriber } from '../types';
 
-import type { SubscribeReadonlyNode as SubscribeReadonlyNodeImpl } from './types';
+import type {
+  SubscribeNode,
+  SubscribeReadonlyNode as SubscribeReadonlyNodeImpl,
+} from './types';
 
-export class SubscribeReadonlyNode<EVENTS extends EventLike>
+class SubscribeReadonlyNode<EVENTS extends EventLike>
   implements SubscribeReadonlyNodeImpl<EVENTS>
 {
   /**
@@ -14,7 +16,7 @@ export class SubscribeReadonlyNode<EVENTS extends EventLike>
   /**
    * @internal
    */
-  public readonly __isRoot: false = false as const;
+  public readonly __isRoot: Readonly<false> = false as const;
   public name?: string | undefined;
 
   constructor(node: SubscribeNode<EVENTS>) {
@@ -33,15 +35,24 @@ export class SubscribeReadonlyNode<EVENTS extends EventLike>
     return this.__node.getTransports();
   }
 
-  on(type: string, callback: () => void): Unscubscriber {
+  on(type: string, callback: () => void): Unsubscriber {
     return this.__node.on(type, callback);
   }
 
-  once(type: string, callback: () => void): Unscubscriber {
+  once(type: string, callback: () => void): Unsubscriber {
     return this.__node.once(type, callback);
   }
 
   off(type: string, callback: () => void): void {
     return this.__node.off(type, callback);
   }
+}
+
+/**
+ * Helper for create transport node
+ */
+export function createSubscribeReadonlyNode<T extends EventLike>(
+  node: SubscribeNode<T>,
+): SubscribeReadonlyNode<T> {
+  return new SubscribeReadonlyNode<T>(node);
 }

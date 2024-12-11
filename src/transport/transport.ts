@@ -1,28 +1,27 @@
-import { BaseEventBus, createBaseEventBus } from '../baseEventBus';
 import {
-  BaseEventBusReadonly,
+  type BaseEventBus,
+  type BaseEventBusReadonly,
+  createBaseEventBus,
   createBaseEventBusReadonly,
-} from '../baseEventBusReadonly';
-import {
-  createTransportReadonlyNode,
-  type TransportReadonlyNode,
-} from '../transportReadonlyNode';
-import type { EventLike, Unscubscriber } from '../types';
+} from '../baseEventBus';
+import type { AnyFunction, EventLike, Unsubscriber } from '../types';
 import { noopFunction } from '../utils';
 
+import { createTransportReadonlyNode } from './transportReadonly';
 import type {
   TransportLifecycleEvents,
   TransportOptions,
+  TransportReadonlyNode,
   TransportRoot as TransportRootImpl,
 } from './types';
 
 type Event = string;
-type InitialAction = (...args: any[]) => void;
-type AbortAction = (...args: any[]) => void;
-type Subscribers = Map<Event, Set<InitialAction>>;
-type OnceSubscribersMap = Map<Event, WeakMap<InitialAction, AbortAction>>;
+type Callback = AnyFunction;
+type AbortAction = AnyFunction;
+type Subscribers = Map<Event, Set<Callback>>;
+type OnceSubscribersMap = Map<Event, WeakMap<Callback, AbortAction>>;
 
-const lifecycleWeakMap: WeakMap<
+const LIFECYCLE_WEAK_MAP: WeakMap<
   Transport<any>,
   BaseEventBus<TransportLifecycleEvents<any>>
 > = new WeakMap();
@@ -42,15 +41,15 @@ export class Transport<EVENTS extends EventLike>
   /**
    * @internal
    */
-  public __isRoot: Readonly<true> = true;
+  public readonly __isRoot: Readonly<true> = true as const;
 
-  public isDestroyed = false;
+  public isDestroyed: boolean = false;
 
   public lifecycle: BaseEventBusReadonly<TransportLifecycleEvents<EVENTS>>;
   /**
    * Transport name
    */
-  public readonly name: string | undefined = undefined;
+  public readonly name: Readonly<string | undefined> = undefined;
   /**
    * @default false
    */
@@ -68,14 +67,11 @@ export class Transport<EVENTS extends EventLike>
       name: options?.name ? `${options?.name}__lifecycle` : undefined,
     });
 
-    this.lifecycle = createBaseEventBusReadonly({
-      name: lifecycle.name,
-      eventBus: lifecycle,
-    });
-    lifecycleWeakMap.set(this, lifecycle);
+    this.lifecycle = createBaseEventBusReadonly(lifecycle);
+    LIFECYCLE_WEAK_MAP.set(this, lifecycle);
   }
 
-  public on(event: string, callback: InitialAction): Unscubscriber {
+  public on(event: string, callback: Callback): Unsubscriber {
     if (this.isDestroyed) return noopFunction;
 
     const unsubscriber = this.off.bind(this, event, callback);
@@ -84,7 +80,7 @@ export class Transport<EVENTS extends EventLike>
     if (subscribers) {
       if (subscribers.has(callback)) return unsubscriber;
       subscribers.add(callback);
-      const lifecycle = lifecycleWeakMap.get(this);
+      const lifecycle = LIFECYCLE_WEAK_MAP.get(this);
       if (lifecycle) {
         lifecycle.send('subscribe', {
           event,
@@ -95,7 +91,7 @@ export class Transport<EVENTS extends EventLike>
       }
     } else {
       this.__subscribers.set(event, new Set([callback]));
-      const lifecycle = lifecycleWeakMap.get(this);
+      const lifecycle = LIFECYCLE_WEAK_MAP.get(this);
       if (lifecycle) {
         lifecycle.send('subscribe', {
           event,
@@ -109,7 +105,7 @@ export class Transport<EVENTS extends EventLike>
     return unsubscriber;
   }
 
-  public once(event: string, callback: InitialAction): Unscubscriber {
+  public once(event: string, callback: Callback): Unsubscriber {
     if (this.isDestroyed) return noopFunction;
 
     const unsubscriber = this.off.bind(this, event, callback);
@@ -132,7 +128,7 @@ export class Transport<EVENTS extends EventLike>
     const subscribers = this.__subscribers.get(event);
     if (subscribers) {
       subscribers.add(action);
-      const lifecycle = lifecycleWeakMap.get(this);
+      const lifecycle = LIFECYCLE_WEAK_MAP.get(this);
       if (lifecycle) {
         lifecycle.send('subscribe', {
           event,
@@ -143,7 +139,7 @@ export class Transport<EVENTS extends EventLike>
       }
     } else {
       this.__subscribers.set(event, new Set([action]));
-      const lifecycle = lifecycleWeakMap.get(this);
+      const lifecycle = LIFECYCLE_WEAK_MAP.get(this);
       if (lifecycle) {
         lifecycle.send('subscribe', {
           event,
@@ -157,7 +153,7 @@ export class Transport<EVENTS extends EventLike>
     return unsubscriber;
   }
 
-  public off(event: string, callback: InitialAction): void {
+  public off(event: string, callback: Callback): void {
     if (this.isDestroyed) return;
 
     const subscribers = this.__subscribers.get(event);
@@ -170,8 +166,9 @@ export class Transport<EVENTS extends EventLike>
       if (!actioions) return;
 
       const action = actioions.get(callback);
-      actioions.delete(callback);
       if (!action) return;
+
+      actioions.delete(callback);
 
       subscribers.delete(action);
       if (!subscribers.size) {
@@ -185,7 +182,7 @@ export class Transport<EVENTS extends EventLike>
       }
     }
 
-    const lifecycle = lifecycleWeakMap.get(this);
+    const lifecycle = LIFECYCLE_WEAK_MAP.get(this);
     if (lifecycle) {
       lifecycle.send('unsubscribe', {
         event,
@@ -201,6 +198,7 @@ export class Transport<EVENTS extends EventLike>
 
     const subscribersEvent = this.__subscribers.get(args[0]);
     const subscribersAllEvent = this.__subscribers.get('*');
+
     if (!subscribersEvent?.size && !subscribersAllEvent?.size) return;
 
     if (this.sync) {
@@ -216,22 +214,18 @@ export class Transport<EVENTS extends EventLike>
       }
     } else {
       if (subscribersEvent?.size) {
-        queueMicrotask(() => {
-          if (subscribersEvent?.size) {
-            for (const subscriber of subscribersEvent) {
-              subscriber(...args);
-            }
-          }
-        });
+        for (const subscriber of subscribersEvent) {
+          queueMicrotask(() => {
+            subscriber(...args);
+          });
+        }
       }
       if (subscribersAllEvent?.size) {
-        queueMicrotask(() => {
-          if (subscribersAllEvent?.size) {
-            for (const subscriber of subscribersAllEvent) {
-              subscriber(...args);
-            }
-          }
-        });
+        for (const subscriber of subscribersAllEvent) {
+          queueMicrotask(() => {
+            subscriber(...args);
+          });
+        }
       }
     }
   }
@@ -244,13 +238,13 @@ export class Transport<EVENTS extends EventLike>
     if (this.isDestroyed) return;
     this.isDestroyed = true;
 
-    const lifecycle = lifecycleWeakMap.get(this);
+    const lifecycle = LIFECYCLE_WEAK_MAP.get(this);
     if (lifecycle) {
       lifecycle.send('destroy', undefined);
       lifecycle.destroy();
     }
 
-    lifecycleWeakMap.delete(this);
+    LIFECYCLE_WEAK_MAP.delete(this);
 
     setTimeout(() => {
       this.__onceCallbackMap.clear();

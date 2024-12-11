@@ -1,4 +1,4 @@
-import type { DestroyedNode, EventLike, Unscubscriber } from '../types';
+import type { DestroyedNode, EventLike, Unsubscriber } from '../types';
 
 export type BaseEventBusOptions = {
   /**
@@ -34,7 +34,7 @@ export interface BaseEventBusSubscriber<EVENTS extends EventLike> {
   on<EVENT extends string & keyof EVENTS>(
     event: EVENT,
     callback: (event: EVENT, payload: EVENTS[EVENT]) => void,
-  ): Unscubscriber;
+  ): Unsubscriber;
   /**
    * unsubscribe from an event.
    * If there are no subscribers left for the event, we remove it from the map.
@@ -94,4 +94,9 @@ export interface BaseEventBus<EVENTS extends EventLike>
     event: EVENT,
     payload: EVENTS[EVENT],
   ): void;
+}
+
+export interface BaseEventBusReadonly<EVENTS extends EventLike>
+  extends BaseEventBusSubscriber<EVENTS> {
+  name?: string;
 }

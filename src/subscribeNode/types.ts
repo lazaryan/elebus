@@ -1,11 +1,9 @@
-import type { SubscribeReadonlyNode } from '../subscribeReadonlyNode';
+import type { SubscribeNodeSubscribers, TransportNodeBase } from '../nodeTypes';
 import type { TransportRoot } from '../transport';
-import type { TransportReadonlyNode } from '../transportReadonlyNode';
 import type {
   BaseTransportNode,
-  DestroyedNode,
+  BaseTransportNodeReadonly,
   EventLike,
-  Unscubscriber,
 } from '../types';
 import type {
   UtilsTypeFilterTypesWithNamespaces,
@@ -18,79 +16,16 @@ export type OptionsRoots = Record<Namespace, Array<AllNodeTypes>>;
 
 type AllNodeTypes =
   | TransportRoot<any>
-  | TransportReadonlyNode<any>
-  | SubscribeNode<any>
-  | SubscribeReadonlyNode<any>;
+  | BaseTransportNode
+  | BaseTransportNodeReadonly;
 
 export type SubscribeNodeOptions = {
   name?: string;
   roots: OptionsRoots;
 };
 
-export interface SubscribeNodeSubscribers<EVENTS extends EventLike> {
-  on<
-    EVENTS_KEYS extends keyof EVENTS,
-    TYPE extends string,
-    NAMESPACES extends UtilsTypeFilterTypesWithNamespaces<
-      string & EVENTS_KEYS,
-      TYPE
-    >,
-    EVENT_TYPE extends `${NAMESPACES}:*` | '*' | (string & EVENTS_KEYS),
-    NEW_NAMESPACE extends UtilsTypeFilterTypesWithNamespaces<EVENT_TYPE, TYPE>,
-    CALLBACK_EVENTS extends EVENT_TYPE extends '*'
-      ? string & EVENTS_KEYS
-      : EVENT_TYPE extends `${NAMESPACES}:*`
-        ? UtilsTypeRemoveNamespaceFromType<string & EVENTS_KEYS, NEW_NAMESPACE>
-        : EVENT_TYPE,
-    CALLBACK_PARAMS extends {
-      [TYPE in CALLBACK_EVENTS]: [event: TYPE, payload: EVENTS[TYPE]];
-    },
-  >(
-    event: EVENT_TYPE,
-    callback: (...args: CALLBACK_PARAMS[CALLBACK_EVENTS]) => void,
-  ): Unscubscriber;
-
-  once<
-    EVENTS_KEYS extends keyof EVENTS,
-    TYPE extends string,
-    NAMESPACES extends UtilsTypeFilterTypesWithNamespaces<
-      string & EVENTS_KEYS,
-      TYPE
-    >,
-    EVENT_TYPE extends `${NAMESPACES}:*` | '*' | (string & EVENTS_KEYS),
-    NEW_NAMESPACE extends UtilsTypeFilterTypesWithNamespaces<EVENT_TYPE, TYPE>,
-    CALLBACK_EVENTS extends EVENT_TYPE extends '*'
-      ? string & EVENTS_KEYS
-      : EVENT_TYPE extends `${NAMESPACES}:*`
-        ? UtilsTypeRemoveNamespaceFromType<string & EVENTS_KEYS, NEW_NAMESPACE>
-        : EVENT_TYPE,
-    CALLBACK_PARAMS extends {
-      [TYPE in CALLBACK_EVENTS]: [event: TYPE, payload: EVENTS[TYPE]];
-    },
-  >(
-    event: EVENT_TYPE,
-    callback: (...args: CALLBACK_PARAMS[CALLBACK_EVENTS]) => void,
-  ): Unscubscriber;
-
-  off<
-    EVENTS_KEYS extends keyof EVENTS,
-    TYPE extends string,
-    NAMESPACES extends UtilsTypeFilterTypesWithNamespaces<
-      string & EVENTS_KEYS,
-      TYPE
-    >,
-    EVENT_TYPE extends `${NAMESPACES}:*` | '*' | (string & EVENTS_KEYS),
-  >(
-    type: EVENT_TYPE,
-    callback: (...args: any[]) => void,
-  ): void;
-}
-
-type SubscribeNodeBaseExtends<EVENTS extends EventLike> =
-  SubscribeNodeSubscribers<EVENTS> & BaseTransportNode & DestroyedNode;
-
 export interface SubscribeNode<EVENTS extends EventLike>
-  extends SubscribeNodeBaseExtends<EVENTS> {
+  extends TransportNodeBase<EVENTS> {
   name?: string;
 
   add<
@@ -125,4 +60,12 @@ export interface SubscribeNode<EVENTS extends EventLike>
   ): SubscribeNode<CHANNEL_EVENTS>;
 
   asReadonly(): SubscribeReadonlyNode<EVENTS>;
+}
+
+type SubscribeReadonlyNodeExtends<EVENTS extends EventLike> =
+  BaseTransportNodeReadonly & SubscribeNodeSubscribers<EVENTS>;
+
+export interface SubscribeReadonlyNode<EVENTS extends EventLike>
+  extends SubscribeReadonlyNodeExtends<EVENTS> {
+  name?: string;
 }

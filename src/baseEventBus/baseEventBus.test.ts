@@ -126,7 +126,7 @@ describe('on()', () => {
 
     eventBus.send('event', 123);
     await flushMicrotasks();
-    expect(mockSubscriber1.mock.calls).toHaveLength(0);
+    expect(mockSubscriber1.mock.calls).toHaveLength(1);
   });
 
   it('should unsubscribe in next microtask after first event', async () => {
@@ -197,9 +197,10 @@ describe('off() for on() subscribers', () => {
     eventBus.on('event', mockSubscriber);
     eventBus.send('event', 123);
     eventBus.off('event', mockSubscriber);
+    eventBus.send('event', 123);
 
     await flushMicrotasks();
-    expect(mockSubscriber.mock.calls).toHaveLength(0);
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
   });
 
   it('not error if call unsubscribe and off for "on"', async () => {

@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
-import rootPackage from './package.json' assert { type: 'json' };
+import rootPackage from './package.json' with { type: 'json' };
 
 export default defineConfig({
   plugins: [

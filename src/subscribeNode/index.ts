@@ -1,6 +1,6 @@
 export type {
   SubscribeNode,
-  SubscribeNodeSubscribers,
   SubscribeNodeOptions,
+  SubscribeReadonlyNode,
 } from './types';
 export { createSubscribeNode } from './helper';

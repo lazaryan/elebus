@@ -1,4 +1,4 @@
-import type { EventLike, Unscubscriber } from '../types';
+import type { AnyFunction, EventLike, Unsubscriber } from '../types';
 import { noopFunction } from '../utils';
 
 import type {
@@ -7,8 +7,7 @@ import type {
 } from './types';
 
 type Event = string;
-type AnyAction = (...args: any[]) => void;
-type Subscribers = Record<Event, Set<AnyAction>>;
+type Subscribers = Record<Event, Set<AnyFunction>>;
 
 export class BaseEventBus<EVENTS extends EventLike>
   implements BaseEventBusImpl<EVENTS>
@@ -31,7 +30,7 @@ export class BaseEventBus<EVENTS extends EventLike>
     this.name = options?.name ?? undefined;
   }
 
-  public on(event: string, callback: AnyAction): Unscubscriber {
+  public on(event: string, callback: AnyFunction): Unsubscriber {
     if (this.isDestroyed) return noopFunction;
 
     const subscribers = this.__subscribers[event];
@@ -44,7 +43,7 @@ export class BaseEventBus<EVENTS extends EventLike>
     return this.off.bind(this, event, callback);
   }
 
-  public off(event: string, callback: AnyAction): void {
+  public off(event: string, callback: AnyFunction): void {
     if (this.isDestroyed) return;
 
     const subscribers = this.__subscribers[event];
@@ -62,11 +61,11 @@ export class BaseEventBus<EVENTS extends EventLike>
     const subscribers = this.__subscribers[type];
     if (!subscribers || !subscribers.size) return;
 
-    queueMicrotask(() => {
-      for (const subscriber of subscribers) {
+    for (const subscriber of subscribers) {
+      queueMicrotask(() => {
         subscriber(type, ...args);
-      }
-    });
+      });
+    }
   }
 
   public destroy(): void {

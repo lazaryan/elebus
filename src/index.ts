@@ -1,21 +1,23 @@
-export type { EventLike, Unscubscriber, TransportRootNodes } from './types';
+export { type TransportRootBase } from './rootTypes';
+export { type TransportNodeBase } from './nodeTypes';
+export type { EventLike, Unsubscriber, TransportRootNodes } from './types';
 export type {
   UtilsTypeAddNamespaceToEvents,
   UtilsTypeAddNamespaceToType,
   UtilsTypeRemoveNamespaceFromType,
   UtilsTypeFilterTypesWithNamespaces,
 } from './typeUtils';
-export { type BaseEventBus } from './baseEventBus';
+export { type BaseEventBusReadonly } from './baseEventBus';
 export {
   createSubscribeNode,
   type SubscribeNode,
   type SubscribeNodeOptions,
+  type SubscribeReadonlyNode,
 } from './subscribeNode';
-export { type SubscribeReadonlyNode } from './subscribeReadonlyNode';
 export {
   createTransport,
   type TransportLifecycleEvents,
   type TransportOptions,
   type TransportRoot,
+  type TransportReadonlyNode,
 } from './transport';
-export { type TransportReadonlyNode } from './transportReadonlyNode';
