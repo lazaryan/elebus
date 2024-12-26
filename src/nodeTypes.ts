@@ -1,4 +1,9 @@
-import type { BaseTransportNode, EventLike, Unsubscriber } from './types';
+import type {
+  BaseTransportNode,
+  BaseTransportNodeReadonly,
+  EventLike,
+  Unsubscriber,
+} from './types';
 import type {
   UtilsTypeFilterTypesWithNamespaces,
   UtilsTypeRemoveNamespaceFromType,
@@ -65,3 +70,6 @@ export interface SubscribeNodeSubscribers<EVENTS extends EventLike> {
 
 export type TransportNodeBase<EVENTS extends EventLike> =
   SubscribeNodeSubscribers<EVENTS> & BaseTransportNode;
+
+export type TransportNodeBaseReadonly<EVENTS extends EventLike> =
+  SubscribeNodeSubscribers<EVENTS> & BaseTransportNodeReadonly;

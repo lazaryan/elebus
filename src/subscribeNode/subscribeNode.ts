@@ -1,9 +1,15 @@
 import type { TransportRoot } from '../transport';
-import type { EventLike, TransportRootNodes, Unsubscriber } from '../types';
+import type {
+  AnyFunction,
+  EventLike,
+  TransportRootNodes,
+  Unsubscriber,
+} from '../types';
 import { noopFunction } from '../utils';
 
 import { createSubscribeReadonlyNode } from './subscribeNodeReadonly';
 import type {
+  AllNodeTypes,
   Namespace,
   SubscribeNode as SubscribeNodeImpl,
   SubscribeNodeOptions,
@@ -107,14 +113,27 @@ export class SubscriberNode<EVENTS extends EventLike>
     return this.__roots;
   }
 
-  public add(namespace: Namespace, root: TransportRoot<any>): void {
-    if (root.isDestroyed) return;
+  public add(namespace: Namespace, node: AllNodeTypes): void {
+    if (node.isDestroyed) return;
+
+    if (!node.__isRoot) {
+      const roots = node.getTransports();
+      for (const rootNamesapce in roots) {
+        const namespacedRoots = roots[rootNamesapce];
+        const resultNamespace =
+          namespace === '' ? rootNamesapce : `${namespace}:${rootNamesapce}`;
+        for (const root of namespacedRoots) {
+          this.add(resultNamespace, root);
+        }
+      }
+      return;
+    }
 
     if (this.__roots[namespace]) {
-      if (this.__roots[namespace].includes(root)) return;
-      this.__roots[namespace].push(root);
+      if (this.__roots[namespace].includes(node)) return;
+      this.__roots[namespace].push(node);
     } else {
-      this.__roots[namespace] = [root];
+      this.__roots[namespace] = [node];
     }
 
     let destroySubscribers = this.__destroySubscribers[namespace];
@@ -123,10 +142,10 @@ export class SubscriberNode<EVENTS extends EventLike>
       this.__destroySubscribers[namespace] = destroySubscribers;
     }
 
-    if (!destroySubscribers.has(root)) {
+    if (!destroySubscribers.has(node)) {
       destroySubscribers.set(
-        root,
-        root.lifecycle.on('destroy', () => this.remove(namespace, root)),
+        node,
+        node.lifecycle.on('destroy', () => this.remove(namespace, node)),
       );
     }
 
@@ -147,35 +166,48 @@ export class SubscriberNode<EVENTS extends EventLike>
                   callback(event, ...args);
                 };
 
-          roots.set(root, root.on(event, action));
+          roots.set(node, node.on(event, action));
         } else {
           const action =
             namespace === ''
               ? (type: string, ...args: any[]): void => {
                   callback(type, ...args);
-                  roots.delete(root);
+                  roots.delete(node);
                 }
               : (type: string, ...args: any[]): void => {
                   const event = `${namespace}:${type}`;
                   callback(event, ...args);
-                  roots.delete(root);
+                  roots.delete(node);
                 };
 
-          roots.set(root, root.once(event, action));
+          roots.set(node, node.once(event, action));
         }
       }
     }
   }
 
-  public remove(namespace: Namespace, root: TransportRoot<any>): void {
+  public remove(namespace: Namespace, node: AllNodeTypes): void {
+    if (!node.__isRoot) {
+      const roots = node.getTransports();
+      for (const rootNamesapce in roots) {
+        const namespacedRoots = roots[rootNamesapce];
+        const resultNamespace =
+          namespace === '' ? rootNamesapce : `${namespace}:${rootNamesapce}`;
+        for (const root of namespacedRoots) {
+          this.remove(resultNamespace, root);
+        }
+      }
+      return;
+    }
+
     const roots = this.__roots[namespace];
-    if (!roots || !roots.includes(root)) return;
+    if (!roots || !roots.includes(node)) return;
 
     const destroySubscribers = this.__destroySubscribers[namespace];
     if (destroySubscribers) {
-      if (destroySubscribers.has(root)) {
-        destroySubscribers.get(root)?.();
-        destroySubscribers.delete(root);
+      if (destroySubscribers.has(node)) {
+        destroySubscribers.get(node)?.();
+        destroySubscribers.delete(node);
 
         if (!destroySubscribers.size) {
           delete this.__destroySubscribers[namespace];
@@ -183,7 +215,7 @@ export class SubscriberNode<EVENTS extends EventLike>
       }
     }
 
-    const index = roots.indexOf(root);
+    const index = roots.indexOf(node);
     if (index === -1) return;
     roots.splice(index, 1);
     if (!roots.length) {
@@ -201,9 +233,9 @@ export class SubscriberNode<EVENTS extends EventLike>
 
       for (const subscriber of subscribers) {
         const { roots } = subscriber[1];
-        if (!roots.has(root)) continue;
-        roots.get(root)?.();
-        roots.delete(root);
+        if (!roots.has(node)) continue;
+        roots.get(node)?.();
+        roots.delete(node);
       }
 
       if (!subscribers.size) {
@@ -232,7 +264,7 @@ export class SubscriberNode<EVENTS extends EventLike>
     return createSubscribeReadonlyNode(this);
   }
 
-  public on(type: string, callback: (...args: any[]) => void): Unsubscriber {
+  public on(type: string, callback: AnyFunction): Unsubscriber {
     if (this.isDestroyed) return noopFunction;
 
     const unsubscribers: Array<SubscriberRootsMap> = [];
@@ -241,6 +273,10 @@ export class SubscriberNode<EVENTS extends EventLike>
 
     for (const { namespace, event } of subscribers) {
       if (this.__subscribers[namespace]?.[event]?.has(callback)) {
+        const info = this.__subscribers[namespace]?.[event].get(callback);
+        if (info) {
+          unsubscribers.push(info.roots);
+        }
         continue;
       }
 
@@ -289,7 +325,7 @@ export class SubscriberNode<EVENTS extends EventLike>
     };
   }
 
-  public once(type: string, callback: (...args: any[]) => void): Unsubscriber {
+  public once(type: string, callback: AnyFunction): Unsubscriber {
     if (this.isDestroyed) return noopFunction;
 
     const subscribers = getSubscribers(type, Object.keys(this.__roots));
@@ -298,6 +334,10 @@ export class SubscriberNode<EVENTS extends EventLike>
 
     for (const { namespace, event } of subscribers) {
       if (this.__subscribers[namespace]?.[event]?.has(callback)) {
+        const info = this.__subscribers[namespace]?.[event].get(callback);
+        if (info) {
+          unsubscribers[namespace] = info.roots;
+        }
         continue;
       }
 
@@ -361,7 +401,7 @@ export class SubscriberNode<EVENTS extends EventLike>
     };
   }
 
-  public off(type: string, callback: (...args: any[]) => void): void {
+  public off(type: string, callback: AnyFunction): void {
     if (this.isDestroyed) return;
 
     const subscribers = getSubscribers(type, Object.keys(this.__roots));

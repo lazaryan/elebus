@@ -1,4 +1,7 @@
-export { type TransportRootBase } from './rootTypes';
+export {
+  type TransportRootBase,
+  type TransportLifecycleEvents,
+} from './rootTypes';
 export { type TransportNodeBase } from './nodeTypes';
 export type { EventLike, Unsubscriber, TransportRootNodes } from './types';
 export type {
@@ -9,6 +12,11 @@ export type {
 } from './typeUtils';
 export { type BaseEventBusReadonly } from './baseEventBus';
 export {
+  createBufferNode,
+  type BufferEvents,
+  type BufferNode,
+} from './bufferNode';
+export {
   createSubscribeNode,
   type SubscribeNode,
   type SubscribeNodeOptions,
@@ -16,7 +24,6 @@ export {
 } from './subscribeNode';
 export {
   createTransport,
-  type TransportLifecycleEvents,
   type TransportOptions,
   type TransportRoot,
   type TransportReadonlyNode,

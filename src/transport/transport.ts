@@ -4,12 +4,12 @@ import {
   createBaseEventBus,
   createBaseEventBusReadonly,
 } from '../baseEventBus';
+import type { TransportLifecycleEvents } from '../rootTypes';
 import type { AnyFunction, EventLike, Unsubscriber } from '../types';
 import { noopFunction } from '../utils';
 
 import { createTransportReadonlyNode } from './transportReadonly';
 import type {
-  TransportLifecycleEvents,
   TransportOptions,
   TransportReadonlyNode,
   TransportRoot as TransportRootImpl,

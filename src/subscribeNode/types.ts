@@ -14,7 +14,7 @@ export type Namespace = string;
 export type Type = string;
 export type OptionsRoots = Record<Namespace, Array<AllNodeTypes>>;
 
-type AllNodeTypes =
+export type AllNodeTypes =
   | TransportRoot<any>
   | BaseTransportNode
   | BaseTransportNodeReadonly;
@@ -26,15 +26,13 @@ export type SubscribeNodeOptions = {
 
 export interface SubscribeNode<EVENTS extends EventLike>
   extends TransportNodeBase<EVENTS> {
-  name?: string;
-
   add<
     TYPES extends string & keyof EVENTS,
     TYPE extends Type,
     ALL_NAMESPACES extends UtilsTypeFilterTypesWithNamespaces<TYPES, TYPE>,
   >(
     namespace: ALL_NAMESPACES | '',
-    root: TransportRoot<any>,
+    root: AllNodeTypes,
   ): void;
   remove<
     TYPES extends string & keyof EVENTS,
@@ -42,7 +40,7 @@ export interface SubscribeNode<EVENTS extends EventLike>
     ALL_NAMESPACES extends UtilsTypeFilterTypesWithNamespaces<TYPES, TYPE>,
   >(
     namespace: ALL_NAMESPACES | '',
-    root: TransportRoot<any>,
+    root: AllNodeTypes,
   ): void;
   channel<
     EVENT_TYPES extends string & keyof EVENTS,
@@ -66,6 +64,4 @@ type SubscribeReadonlyNodeExtends<EVENTS extends EventLike> =
   BaseTransportNodeReadonly & SubscribeNodeSubscribers<EVENTS>;
 
 export interface SubscribeReadonlyNode<EVENTS extends EventLike>
-  extends SubscribeReadonlyNodeExtends<EVENTS> {
-  name?: string;
-}
+  extends SubscribeReadonlyNodeExtends<EVENTS> {}

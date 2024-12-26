@@ -1,4 +1,33 @@
+import { BaseEventBusReadonly } from './baseEventBus';
 import type { BaseTransportRoot, EventLike, Unsubscriber } from './types';
+
+export type TransportLifecycleEvents<EVENTS extends EventLike> = {
+  /**
+   * The transport was cleared. After that,
+   * it stops functioning and all data in it is cleared.
+   */
+  destroy: undefined;
+  /**
+   * Subscribed to some event.
+   * The object indicates what event was subscribed to and whether it is the first.
+   */
+  subscribe: {
+    event: string & keyof EVENTS;
+    mode: 'on' | 'once';
+    subscriber: Parameters<TransportRootSubscribers<EVENTS>['on']>[1];
+    subscribersCount: number;
+  };
+  /**
+   * Unsubscribed from some event.
+   * The object indicates what event was unsubscribed from and whether there are more subscribers.
+   */
+  unsubscribe: {
+    event: string & keyof EVENTS;
+    mode: 'on' | 'once';
+    subscriber: Parameters<TransportRootSubscribers<EVENTS>['off']>[1];
+    subscribersCount: number;
+  };
+};
 
 export interface TransportRootSubscribers<EVENTS extends EventLike> {
   /**
@@ -97,4 +126,36 @@ export interface TransportRootSubscribers<EVENTS extends EventLike> {
 }
 
 export type TransportRootBase<EVENTS extends EventLike> =
-  TransportRootSubscribers<EVENTS> & BaseTransportRoot;
+  TransportRootSubscribers<EVENTS> &
+    BaseTransportRoot & {
+      /**
+       * Transport lifecycle event bus. You can subscribe to 3 events:
+       * 1) destroy - the transport was cleared. After that, it stops functioning and all data in it is cleared.
+       * 2) subscribe - subscribed to some event. The object indicates what event was subscribed to and whether it is the first.
+       * 3) unsubscribe - unsubscribed from some event. The object indicates what event was unsubscribed from and whether there are more subscribers.
+       *
+       * When the main transport is destroyed, the lifecycle event bus also dies.
+       *
+       * @example
+       * ```ts
+       * const transport = createTransport<Events>();
+       *
+       * transport.lifecycle.on('destroy', () => console.log('transport is destroy'));
+       * transport.lifecycle.on('subscribe', ({ event, isFirstSubscribe }) => console.log(`subscribe to event ${event} isFirst=${isFirstSubscribe}`));
+       * transport.lifecycle.on('unubscribe', ({ event, isHasSubscribers }) => console.log(`unsubscribe from event ${event} isHasSubscribers=${isHasSubscribers}`));
+       *
+       * const unsubscriber1 = transport.on('event1', () => {}) // subscribe to event event1 isFirst=true
+       * const unsubscriber2 = transport.on('event1', () => {}) // subscribe to event event1 isFirst=false
+       * const unsubscriber3 = transport.on('event2', () => {}) // subscribe to event event2 isFirst=true
+       *
+       * unsubscriber3() // unsubscribe from event event2 isHasSubscribers=false
+       * unsubscriber2() // unsubscribe from event event1 isHasSubscribers=true
+       * unsubscriber1() // unsubscribe from event event1 isHasSubscribers=false
+       *
+       * transport.destroy(); // transport is destroy
+       * ```
+       */
+      lifecycle: Readonly<
+        BaseEventBusReadonly<TransportLifecycleEvents<EVENTS>>
+      >;
+    };

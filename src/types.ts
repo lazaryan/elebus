@@ -21,6 +21,7 @@ export interface DestroyedNode {
 }
 
 export interface BaseTransportRoot extends DestroyedNode {
+  name?: string;
   /**
    * @internal
    */
@@ -28,6 +29,7 @@ export interface BaseTransportRoot extends DestroyedNode {
 }
 
 export interface BaseTransportNode extends DestroyedNode {
+  name?: string;
   /**
    * @internal
    */
@@ -40,6 +42,7 @@ export interface BaseTransportNode extends DestroyedNode {
 }
 
 export interface BaseTransportNodeReadonly {
+  name?: string;
   /**
    * @internal
    */
