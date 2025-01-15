@@ -20,6 +20,7 @@ export default defineConfig({
       name: rootPackage['name'],
       // the proper extensions will be added
       fileName: 'index',
+      formats: ['es', 'cjs', 'umd'],
     },
   },
 });

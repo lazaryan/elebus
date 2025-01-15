@@ -24,8 +24,9 @@
     "LICENSE",
     "Readme.md"
   ],
-  "source": "src/index.ts",
   "main": "dist/index.umd.cjs",
+  "module": "dist/index.js",
+  "jsnext:main": "dist/index.js",
   "unpkg": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
