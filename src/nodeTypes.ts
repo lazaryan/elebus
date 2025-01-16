@@ -1,4 +1,5 @@
 import type {
+  AllEventTypes,
   BaseTransportNode,
   BaseTransportNodeReadonly,
   EventLike,
@@ -17,11 +18,14 @@ export interface SubscribeNodeSubscribers<EVENTS extends EventLike> {
       string & EVENTS_KEYS,
       TYPE
     >,
-    EVENT_TYPE extends `${NAMESPACES}:*` | '*' | (string & EVENTS_KEYS),
+    EVENT_TYPE extends
+      | `${NAMESPACES}:${AllEventTypes}`
+      | AllEventTypes
+      | (string & EVENTS_KEYS),
     NEW_NAMESPACE extends UtilsTypeFilterTypesWithNamespaces<EVENT_TYPE, TYPE>,
-    CALLBACK_EVENTS extends EVENT_TYPE extends '*'
+    CALLBACK_EVENTS extends EVENT_TYPE extends AllEventTypes
       ? string & EVENTS_KEYS
-      : EVENT_TYPE extends `${NAMESPACES}:*`
+      : EVENT_TYPE extends `${NAMESPACES}:${AllEventTypes}`
         ? UtilsTypeRemoveNamespaceFromType<string & EVENTS_KEYS, NEW_NAMESPACE>
         : EVENT_TYPE,
     CALLBACK_PARAMS extends {
@@ -39,11 +43,14 @@ export interface SubscribeNodeSubscribers<EVENTS extends EventLike> {
       string & EVENTS_KEYS,
       TYPE
     >,
-    EVENT_TYPE extends `${NAMESPACES}:*` | '*' | (string & EVENTS_KEYS),
+    EVENT_TYPE extends
+      | `${NAMESPACES}:${AllEventTypes}`
+      | AllEventTypes
+      | (string & EVENTS_KEYS),
     NEW_NAMESPACE extends UtilsTypeFilterTypesWithNamespaces<EVENT_TYPE, TYPE>,
-    CALLBACK_EVENTS extends EVENT_TYPE extends '*'
+    CALLBACK_EVENTS extends EVENT_TYPE extends AllEventTypes
       ? string & EVENTS_KEYS
-      : EVENT_TYPE extends `${NAMESPACES}:*`
+      : EVENT_TYPE extends `${NAMESPACES}:${AllEventTypes}`
         ? UtilsTypeRemoveNamespaceFromType<string & EVENTS_KEYS, NEW_NAMESPACE>
         : EVENT_TYPE,
     CALLBACK_PARAMS extends {
@@ -61,7 +68,10 @@ export interface SubscribeNodeSubscribers<EVENTS extends EventLike> {
       string & EVENTS_KEYS,
       TYPE
     >,
-    EVENT_TYPE extends `${NAMESPACES}:*` | '*' | (string & EVENTS_KEYS),
+    EVENT_TYPE extends
+      | `${NAMESPACES}:${AllEventTypes}`
+      | AllEventTypes
+      | (string & EVENTS_KEYS),
   >(
     type: EVENT_TYPE,
     callback: (...args: any[]) => void,

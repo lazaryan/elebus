@@ -36,21 +36,21 @@ class TransportReadonlyNode<EVENTS extends EventLike>
     return this.__root.lifecycle;
   }
 
-  public getTransports(): TransportRootNodes {
+  public getTransports = (): TransportRootNodes => {
     return { '': [this.__root] };
-  }
+  };
 
-  public on(type: string, callback: AnyFunction): Unsubscriber {
+  public on = (type: string, callback: AnyFunction): Unsubscriber => {
     return this.__root.on(type, callback);
-  }
+  };
 
-  public once(type: string, callback: AnyFunction): Unsubscriber {
+  public once = (type: string, callback: AnyFunction): Unsubscriber => {
     return this.__root.once(type, callback);
-  }
+  };
 
-  public off(type: string, callback: AnyFunction): void {
+  public off = (type: string, callback: AnyFunction): void => {
     return this.__root.off(type, callback);
-  }
+  };
 }
 
 /**

@@ -28,21 +28,21 @@ class SubscribeReadonlyNode<EVENTS extends EventLike>
     return this.__node.isDestroyed;
   }
 
-  getTransports() {
+  getTransports = () => {
     return this.__node.getTransports();
-  }
+  };
 
-  on(type: string, callback: () => void): Unsubscriber {
+  on = (type: string, callback: () => void): Unsubscriber => {
     return this.__node.on(type, callback);
-  }
+  };
 
-  once(type: string, callback: () => void): Unsubscriber {
+  once = (type: string, callback: () => void): Unsubscriber => {
     return this.__node.once(type, callback);
-  }
+  };
 
-  off(type: string, callback: () => void): void {
+  off = (type: string, callback: () => void): void => {
     return this.__node.off(type, callback);
-  }
+  };
 }
 
 /**

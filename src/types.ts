@@ -14,6 +14,8 @@ export type TransportRootNodes = Record<Namespace, Array<TransportRoot<any>>>;
 
 export type TimeoutRef = ReturnType<typeof setTimeout>;
 
+export type AllEventTypes = '*';
+
 export interface DestroyedNode {
   isDestroyed: boolean;
 

@@ -89,7 +89,7 @@ export class BufferNode<EVENTS extends EventLike>
     }
   }
 
-  on(type: string, callback: AnyFunction): Unsubscriber {
+  on = (type: string, callback: AnyFunction): Unsubscriber => {
     if (this.isDestroyed) return noopFunction;
 
     let subscribers = this.__subscribers.get(type);
@@ -159,9 +159,9 @@ export class BufferNode<EVENTS extends EventLike>
     });
 
     return unsubscriber;
-  }
+  };
 
-  once(type: string, callback: AnyFunction): Unsubscriber {
+  once = (type: string, callback: AnyFunction): Unsubscriber => {
     if (this.isDestroyed) return noopFunction;
 
     let subscribers = this.__subscribers.get(type);
@@ -232,18 +232,18 @@ export class BufferNode<EVENTS extends EventLike>
     });
 
     return unsubscriber;
-  }
+  };
 
-  off(type: string, callback: AnyFunction) {
+  off = (type: string, callback: AnyFunction) => {
     if (this.isDestroyed) return;
 
     const subscriber = this.__subscribers.get(type)?.get(callback);
     if (subscriber) {
       subscriber.unsubscriber();
     }
-  }
+  };
 
-  destroy(): void {
+  destroy = (): void => {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
 
@@ -266,5 +266,5 @@ export class BufferNode<EVENTS extends EventLike>
       subscriber[1].clear();
     }
     this.__subscribers.clear();
-  }
+  };
 }

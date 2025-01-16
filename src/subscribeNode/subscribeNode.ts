@@ -107,11 +107,11 @@ export class SubscriberNode<EVENTS extends EventLike>
     }
   }
 
-  public getTransports(): TransportRootNodes {
+  public getTransports = (): TransportRootNodes => {
     return this.__roots;
-  }
+  };
 
-  public add(namespace: Namespace, node: AllNodeTypes): void {
+  public add = (namespace: Namespace, node: AllNodeTypes): void => {
     if (node.isDestroyed) return;
 
     if (!node.__isRoot) {
@@ -182,9 +182,9 @@ export class SubscriberNode<EVENTS extends EventLike>
         }
       }
     }
-  }
+  };
 
-  public remove(namespace: Namespace, node: AllNodeTypes): void {
+  public remove = (namespace: Namespace, node: AllNodeTypes): void => {
     if (!node.__isRoot) {
       const roots = node.getTransports();
       for (const rootNamesapce in roots) {
@@ -244,9 +244,9 @@ export class SubscriberNode<EVENTS extends EventLike>
     for (const event of clearedEvents) {
       delete subscribersNamespace[event];
     }
-  }
+  };
 
-  public channel(channel: string): SubscribeNodeImpl<any> {
+  public channel = (channel: string): SubscribeNodeImpl<any> => {
     if (!channel) {
       throw new Error('not use empty channel');
     }
@@ -256,13 +256,13 @@ export class SubscriberNode<EVENTS extends EventLike>
       name: this.name ? `${this.name}__channel_${channel}` : undefined,
       roots: newRoots,
     });
-  }
+  };
 
-  public asReadonly(): SubscribeReadonlyNode<EVENTS> {
+  public asReadonly = (): SubscribeReadonlyNode<EVENTS> => {
     return createSubscribeReadonlyNode(this);
-  }
+  };
 
-  public on(type: string, callback: AnyFunction): Unsubscriber {
+  public on = (type: string, callback: AnyFunction): Unsubscriber => {
     if (this.isDestroyed) return noopFunction;
 
     const unsubscribers: Array<SubscriberRootsMap> = [];
@@ -321,9 +321,9 @@ export class SubscriberNode<EVENTS extends EventLike>
         }
       }
     };
-  }
+  };
 
-  public once(type: string, callback: AnyFunction): Unsubscriber {
+  public once = (type: string, callback: AnyFunction): Unsubscriber => {
     if (this.isDestroyed) return noopFunction;
 
     const subscribers = getSubscribers(type, Object.keys(this.__roots));
@@ -397,9 +397,9 @@ export class SubscriberNode<EVENTS extends EventLike>
 
       unsubscribers = {};
     };
-  }
+  };
 
-  public off(type: string, callback: AnyFunction): void {
+  public off = (type: string, callback: AnyFunction): void => {
     if (this.isDestroyed) return;
 
     const subscribers = getSubscribers(type, Object.keys(this.__roots));
@@ -421,9 +421,9 @@ export class SubscriberNode<EVENTS extends EventLike>
       }
       subscriberInfo.roots.clear();
     }
-  }
+  };
 
-  public destroy(): void {
+  public destroy = (): void => {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
 
@@ -461,5 +461,5 @@ export class SubscriberNode<EVENTS extends EventLike>
       this.__subscribers = {};
       this.__roots = {};
     }, 0);
-  }
+  };
 }

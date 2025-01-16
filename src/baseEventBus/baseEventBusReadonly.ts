@@ -20,11 +20,11 @@ export class BaseEventBusReadonly<EVENTS extends EventLike>
     this.__node = eventBus;
   }
 
-  public on(type: string, callback: AnyFunction): Unsubscriber {
+  public on = (type: string, callback: AnyFunction): Unsubscriber => {
     return this.__node.on(type, callback);
-  }
+  };
 
-  public off(type: string, callback: AnyFunction): void {
+  public off = (type: string, callback: AnyFunction): void => {
     return this.__node.off(type, callback);
-  }
+  };
 }

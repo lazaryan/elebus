@@ -1,5 +1,10 @@
 import { BaseEventBusReadonly } from './baseEventBus';
-import type { BaseTransportRoot, EventLike, Unsubscriber } from './types';
+import type {
+  AllEventTypes,
+  BaseTransportRoot,
+  EventLike,
+  Unsubscriber,
+} from './types';
 
 export type TransportLifecycleEvents<EVENTS extends EventLike> = {
   /**
@@ -55,8 +60,10 @@ export interface TransportRootSubscribers<EVENTS extends EventLike> {
    * ```
    */
   on<
-    EVENT_TYPE extends string & (keyof EVENTS | '*'),
-    EVENT extends EVENT_TYPE extends '*' ? string & keyof EVENTS : EVENT_TYPE,
+    EVENT_TYPE extends string & (keyof EVENTS | AllEventTypes),
+    EVENT extends EVENT_TYPE extends AllEventTypes
+      ? string & keyof EVENTS
+      : EVENT_TYPE,
     CB extends {
       [TYPE in EVENT]: [TYPE, EVENTS[TYPE]];
     },
@@ -90,8 +97,10 @@ export interface TransportRootSubscribers<EVENTS extends EventLike> {
    * ```
    */
   once<
-    EVENT_TYPE extends string & (keyof EVENTS | '*'),
-    EVENT extends EVENT_TYPE extends '*' ? string & keyof EVENTS : EVENT_TYPE,
+    EVENT_TYPE extends string & (keyof EVENTS | AllEventTypes),
+    EVENT extends EVENT_TYPE extends AllEventTypes
+      ? string & keyof EVENTS
+      : EVENT_TYPE,
     CB extends {
       [TYPE in EVENT]: [TYPE, EVENTS[TYPE]];
     },
@@ -119,7 +128,7 @@ export interface TransportRootSubscribers<EVENTS extends EventLike> {
    * transport.off('event', handler);
    * ```
    */
-  off<EVENT_TYPE extends string & (keyof EVENTS | '*')>(
+  off<EVENT_TYPE extends string & (keyof EVENTS | AllEventTypes)>(
     event: EVENT_TYPE,
     callback: (...args: any[]) => void,
   ): void;

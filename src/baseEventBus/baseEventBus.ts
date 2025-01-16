@@ -30,7 +30,7 @@ export class BaseEventBus<EVENTS extends EventLike>
     this.name = options?.name ?? undefined;
   }
 
-  public on(event: string, callback: AnyFunction): Unsubscriber {
+  public on = (event: string, callback: AnyFunction): Unsubscriber => {
     if (this.isDestroyed) return noopFunction;
 
     const subscribers = this.__subscribers[event];
@@ -41,9 +41,9 @@ export class BaseEventBus<EVENTS extends EventLike>
     }
 
     return this.off.bind(this, event, callback);
-  }
+  };
 
-  public off(event: string, callback: AnyFunction): void {
+  public off = (event: string, callback: AnyFunction): void => {
     if (this.isDestroyed) return;
 
     const subscribers = this.__subscribers[event];
@@ -53,9 +53,9 @@ export class BaseEventBus<EVENTS extends EventLike>
     if (!subscribers.size) {
       delete this.__subscribers[event];
     }
-  }
+  };
 
-  public send(type: string, ...args: any[]): void {
+  public send = (type: string, ...args: any[]): void => {
     if (this.isDestroyed) return;
 
     const subscribers = this.__subscribers[type];
@@ -66,9 +66,9 @@ export class BaseEventBus<EVENTS extends EventLike>
         subscriber(type, ...args);
       });
     }
-  }
+  };
 
-  public destroy(): void {
+  public destroy = (): void => {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
 
@@ -78,5 +78,5 @@ export class BaseEventBus<EVENTS extends EventLike>
       }
       this.__subscribers = {};
     }, 0);
-  }
+  };
 }

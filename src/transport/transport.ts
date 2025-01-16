@@ -68,7 +68,7 @@ export class Transport<EVENTS extends EventLike>
     LIFECYCLE_WEAK_MAP.set(this, lifecycle);
   }
 
-  public on(event: string, callback: Callback): Unsubscriber {
+  public on = (event: string, callback: Callback): Unsubscriber => {
     if (this.isDestroyed) return noopFunction;
 
     const unsubscriber = this.off.bind(this, event, callback);
@@ -100,9 +100,9 @@ export class Transport<EVENTS extends EventLike>
     }
 
     return unsubscriber;
-  }
+  };
 
-  public once(event: string, callback: Callback): Unsubscriber {
+  public once = (event: string, callback: Callback): Unsubscriber => {
     if (this.isDestroyed) return noopFunction;
 
     const unsubscriber = this.off.bind(this, event, callback);
@@ -148,9 +148,9 @@ export class Transport<EVENTS extends EventLike>
     }
 
     return unsubscriber;
-  }
+  };
 
-  public off(event: string, callback: Callback): void {
+  public off = (event: string, callback: Callback): void => {
     if (this.isDestroyed) return;
 
     const subscribers = this.__subscribers.get(event);
@@ -188,9 +188,9 @@ export class Transport<EVENTS extends EventLike>
         subscribersCount: subscribers.size,
       });
     }
-  }
+  };
 
-  public send(...args: any[]): void {
+  public send = (...args: any[]): void => {
     if (this.isDestroyed) return;
 
     const subscribersEvent = this.__subscribers.get(args[0]);
@@ -225,13 +225,13 @@ export class Transport<EVENTS extends EventLike>
         }
       }
     }
-  }
+  };
 
-  public asReadonly(): TransportReadonlyNode<EVENTS> {
+  public asReadonly = (): TransportReadonlyNode<EVENTS> => {
     return createTransportReadonlyNode<EVENTS>(this);
-  }
+  };
 
-  public destroy(): void {
+  public destroy = (): void => {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
 
@@ -251,5 +251,5 @@ export class Transport<EVENTS extends EventLike>
       }
       this.__subscribers.clear();
     }, 0);
-  }
+  };
 }
