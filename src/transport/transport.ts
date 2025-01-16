@@ -38,9 +38,6 @@ export class Transport<EVENTS extends EventLike>
    */
   private __onceCallbackMap: OnceSubscribersMap = new Map();
 
-  /**
-   * @internal
-   */
   public readonly __isRoot: Readonly<true> = true as const;
 
   public isDestroyed: boolean = false;

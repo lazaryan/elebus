@@ -50,9 +50,6 @@ export class BufferNode<EVENTS extends EventLike>
    */
   private __destroyUnsubscriber: Unsubscriber | undefined = undefined;
 
-  /**
-   * @internal
-   */
   public readonly __isRoot: Readonly<true> = true as const;
 
   public isDestroyed: boolean = false;

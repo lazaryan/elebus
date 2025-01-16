@@ -15,9 +15,7 @@ class TransportReadonlyNode<EVENTS extends EventLike>
    * @internal
    */
   private __root: TransportRoot<EVENTS>;
-  /**
-   * @internal
-   */
+
   public readonly __isRoot: false = false as const;
 
   public readonly name: Readonly<string | undefined> = undefined;

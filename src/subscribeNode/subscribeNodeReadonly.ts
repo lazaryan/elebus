@@ -13,9 +13,6 @@ class SubscribeReadonlyNode<EVENTS extends EventLike>
    */
   private __node: SubscribeNode<EVENTS>;
 
-  /**
-   * @internal
-   */
   public readonly __isRoot: Readonly<false> = false as const;
   public name?: string | undefined;
 

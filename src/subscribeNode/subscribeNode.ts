@@ -54,9 +54,7 @@ export class SubscriberNode<EVENTS extends EventLike>
    * @internal
    */
   private __destroySubscribers: Record<Namespace, DestroySubscribers> = {};
-  /**
-   * @internal
-   */
+
   public readonly __isRoot: Readonly<false> = false as const;
 
   public isDestroyed: boolean = false;

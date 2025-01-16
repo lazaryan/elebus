@@ -22,17 +22,11 @@ export interface DestroyedNode {
 
 export interface BaseTransportRoot extends DestroyedNode {
   name?: string;
-  /**
-   * @internal
-   */
   __isRoot: Readonly<true>;
 }
 
 export interface BaseTransportNode extends DestroyedNode {
   name?: string;
-  /**
-   * @internal
-   */
   __isRoot: Readonly<false>;
 
   /**
@@ -43,9 +37,6 @@ export interface BaseTransportNode extends DestroyedNode {
 
 export interface BaseTransportNodeReadonly {
   name?: string;
-  /**
-   * @internal
-   */
   __isRoot: Readonly<false>;
   /**
    * A property indicating that a class has been destroyed.
