@@ -745,3 +745,62 @@ describe('destroy()', () => {
     expect(mockSubscriber.mock.calls).toHaveLength(0);
   });
 });
+
+describe('use shared transports', () => {
+  it('use shared transport', () => {
+    const transport1 = createTransport<{ event: undefined }>({
+      name: 'test',
+      shared: true,
+      sync: true,
+    });
+    const transport2 = createTransport<{ event: undefined }>({
+      name: 'test',
+      shared: true,
+      sync: true,
+    });
+
+    const mockSubscriber = jest.fn();
+    transport2.on('event', mockSubscriber);
+    transport1.send('event');
+
+    expect(mockSubscriber.mock.calls).toHaveLength(1);
+  });
+
+  it('not use shared transport if setting is not equal', () => {
+    const transport1 = createTransport<{ event: undefined }>({
+      name: 'test',
+      shared: true,
+      sync: true,
+    });
+    const transport2 = createTransport<{ event: undefined }>({
+      name: 'test',
+      shared: true,
+      sync: false,
+    });
+
+    const mockSubscriber = jest.fn();
+    transport2.on('event', mockSubscriber);
+    transport1.send('event');
+
+    expect(mockSubscriber.mock.calls).toHaveLength(0);
+  });
+
+  it('not use shared transport if name is not equal', () => {
+    const transport1 = createTransport<{ event: undefined }>({
+      name: 'test_1',
+      shared: true,
+      sync: true,
+    });
+    const transport2 = createTransport<{ event: undefined }>({
+      name: 'test_2',
+      shared: true,
+      sync: true,
+    });
+
+    const mockSubscriber = jest.fn();
+    transport2.on('event', mockSubscriber);
+    transport1.send('event');
+
+    expect(mockSubscriber.mock.calls).toHaveLength(0);
+  });
+});

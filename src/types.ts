@@ -10,12 +10,19 @@ export type Unsubscriber = () => void;
 export type AnyFunction = (...args: any[]) => void;
 
 export type Namespace = string;
+/**
+ * List of nodes the node is subscribed to.
+ */
 export type TransportRootNodes = Record<Namespace, Array<TransportRoot<any>>>;
 
 export type TimeoutRef = ReturnType<typeof setTimeout>;
 
 export type AllEventTypes = '*';
 
+/**
+ * A node that has a cleanup mechanism. After the method chchchch is executed,
+ * the node becomes inactive because event subscriptions and message sending stop functioning.
+ */
 export interface DestroyedNode {
   isDestroyed: boolean;
 

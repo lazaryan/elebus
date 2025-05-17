@@ -14,6 +14,10 @@ export type TransportOptions = {
    * @default false
    */
   sync?: boolean;
+  /**
+   * @default false
+   */
+  shared?: boolean;
 };
 
 export interface TransportRoot<EVENTS extends EventLike>
