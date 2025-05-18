@@ -66,6 +66,9 @@ type BaseEventBusExtends<EVENTS extends EventLike> = DestroyedNode &
 
 export interface BaseEventBus<EVENTS extends EventLike>
   extends BaseEventBusExtends<EVENTS> {
+  /**
+   * Event bus name
+   */
   name?: Readonly<string>;
   /**
    * Method for sending an event to listeners.

@@ -137,7 +137,7 @@ The event is passed the number of remaining subscribers to this event and what t
 
 ```ts
 type Events = { test_event: number };
-const transport = createTransport({ name: 'transport name'});
+const transport = createTransport({ name: 'transport name' });
 
 transport.lifecycle.on('destroy', () => {
   console.log('destroy node');
@@ -163,6 +163,21 @@ transport.destroy(); // console log: destroy node
 ```
 
 When the main node is destroyed, the lifecycle is also destroyed.
+
+If you need to access transport in several places in your application,
+you can pass the `shared` parameter during initialization.
+In this case, the transport will be cached, and the next time a creation request is made with the same settings,
+not a new transport will be created, but one returned from the cache.
+
+```ts
+const transport1 = createTransport<{ event: undefined }>({ name: 'sharedTransport', shared: true });
+const transport2 = createTransport<{ event: undefined }>({ name: 'sharedTransport', shared: true });
+
+// transport1 === transport2
+transport2.on('event', () => console.log('____event____'))
+transport1.send('event');
+// ____event____
+```
 
 ### Subscribe Node
 

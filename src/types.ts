@@ -17,6 +17,9 @@ export type TransportRootNodes = Record<Namespace, Array<TransportRoot<any>>>;
 
 export type TimeoutRef = ReturnType<typeof setTimeout>;
 
+/**
+ * Event name for subscribe to all events in transport
+ */
 export type AllEventTypes = '*';
 
 /**
@@ -24,6 +27,12 @@ export type AllEventTypes = '*';
  * the node becomes inactive because event subscriptions and message sending stop functioning.
  */
 export interface DestroyedNode {
+  /**
+   * whether the transport is destroyed.
+   * If the transport is destroyed,
+   * then subscriptions and event sending do not work, and the subscriber list is destroyed.
+   * Also, all dependent nodes are automatically unsubscribed from the destroyed node.
+   */
   isDestroyed: boolean;
 
   destroy(): void;
