@@ -1,7 +1,7 @@
 import type { TransportNodeBaseReadonly } from '../nodeTypes';
 import type { TransportRootBase } from '../rootTypes';
 import type { TransportRoot } from '../transport';
-import type { EventLike } from '../types';
+import type { EventLike, TransportRootNodes } from '../types';
 
 export type AllowedNodes<EVENTS extends EventLike> =
   | TransportRoot<EVENTS>
@@ -12,4 +12,9 @@ export type BufferEvents<EVENTS extends EventLike> = {
 };
 
 export interface BufferNode<EVENTS extends EventLike>
-  extends TransportRootBase<BufferEvents<EVENTS>> {}
+  extends TransportRootBase<BufferEvents<EVENTS>> {
+  /**
+   * Method to get the root node object referenced by the node.
+   */
+  getTransports: () => TransportRootNodes;
+}

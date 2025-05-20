@@ -4,6 +4,7 @@ import type {
   AnyFunction,
   EventLike,
   TimeoutRef,
+  TransportRootNodes,
   Unsubscriber,
 } from '../types';
 import { noopFunction } from '../utils';
@@ -54,6 +55,8 @@ export class BufferNode<EVENTS extends EventLike>
 
     if (node.name) {
       this.name = `${node.name}__buffer_node`;
+    } else {
+      this.name = 'buffer_node';
     }
 
     this.lifecycle = LifecycleFabric.create(this);
@@ -259,6 +262,14 @@ export class BufferNode<EVENTS extends EventLike>
         subscribersCount: subscribers?.size ?? 0,
       });
     }
+  };
+
+  public getTransports = (): TransportRootNodes => {
+    if (this.__node.__isRoot && 'send' in this.__node) {
+      return { '': [this.__node] };
+    }
+
+    return this.__node.getTransports();
   };
 
   destroy = (): void => {
