@@ -1,38 +1,11 @@
 import { BaseEventBusReadonly } from './baseEventBus';
+import { TransportLifecycleEvents } from './lifecycles';
 import type {
   AllEventTypes,
   BaseTransportRoot,
   EventLike,
   Unsubscriber,
 } from './types';
-
-export type TransportLifecycleEvents<EVENTS extends EventLike> = {
-  /**
-   * The transport was cleared. After that,
-   * it stops functioning and all data in it is cleared.
-   */
-  destroy: undefined;
-  /**
-   * Subscribed to some event.
-   * The object indicates what event was subscribed to and whether it is the first.
-   */
-  subscribe: {
-    event: string & keyof EVENTS;
-    mode: 'on' | 'once';
-    subscriber: Parameters<TransportRootSubscribers<EVENTS>['on']>[1];
-    subscribersCount: number;
-  };
-  /**
-   * Unsubscribed from some event.
-   * The object indicates what event was unsubscribed from and whether there are more subscribers.
-   */
-  unsubscribe: {
-    event: string & keyof EVENTS;
-    mode: 'on' | 'once';
-    subscriber: Parameters<TransportRootSubscribers<EVENTS>['off']>[1];
-    subscribersCount: number;
-  };
-};
 
 export interface TransportRootSubscribers<EVENTS extends EventLike> {
   /**

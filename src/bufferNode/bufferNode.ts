@@ -1,10 +1,5 @@
-import {
-  BaseEventBus,
-  BaseEventBusReadonly,
-  createBaseEventBus,
-  createBaseEventBusReadonly,
-} from '../baseEventBus';
-import { TransportLifecycleEvents } from '../rootTypes';
+import { type BaseEventBusReadonly } from '../baseEventBus';
+import { LifecycleFabric, type TransportLifecycleEvents } from '../lifecycles';
 import type {
   AnyFunction,
   EventLike,
@@ -20,15 +15,11 @@ type SavedData = {
   timeoutId: TimeoutRef | undefined;
   action: AnyFunction;
   unsubscriber: Unsubscriber;
+  mode: 'on' | 'once';
 };
 type Subscriber = Map<AnyFunction, SavedData>;
 type Event = string;
 type Subscribers = Map<Event, Subscriber>;
-
-const LIFECYCLE_WEAK_MAP: WeakMap<
-  BufferNodeImpl<any>,
-  BaseEventBus<TransportLifecycleEvents<any>>
-> = new WeakMap();
 
 export class BufferNode<EVENTS extends EventLike>
   implements BufferNodeImpl<EVENTS>
@@ -65,12 +56,7 @@ export class BufferNode<EVENTS extends EventLike>
       this.name = `${node.name}__buffer_node`;
     }
 
-    const lifecycle = createBaseEventBus<TransportLifecycleEvents<EVENTS>>({
-      name: this?.name ? `${this?.name}__lifecycle` : undefined,
-    });
-
-    this.lifecycle = createBaseEventBusReadonly(lifecycle);
-    LIFECYCLE_WEAK_MAP.set(this, lifecycle);
+    this.lifecycle = LifecycleFabric.create(this);
 
     if (node.__isRoot) {
       setTimeout(() => {
@@ -156,6 +142,14 @@ export class BufferNode<EVENTS extends EventLike>
       timeoutId,
       action,
       unsubscriber,
+      mode: 'on',
+    });
+
+    LifecycleFabric.send(this, 'subscribe', {
+      event: type,
+      mode: 'on',
+      subscriber: callback,
+      subscribersCount: subscribers.size,
     });
 
     return unsubscriber;
@@ -201,6 +195,13 @@ export class BufferNode<EVENTS extends EventLike>
         if (!subscribers.size) {
           this.__subscribers.delete(type);
         }
+
+        LifecycleFabric.send(this, 'unsubscribe', {
+          event: type,
+          mode: 'once',
+          subscriber: callback,
+          subscribersCount: subscribers.size,
+        });
       }
     };
 
@@ -229,6 +230,14 @@ export class BufferNode<EVENTS extends EventLike>
       timeoutId,
       action,
       unsubscriber,
+      mode: 'once',
+    });
+
+    LifecycleFabric.send(this, 'subscribe', {
+      event: type,
+      mode: 'once',
+      subscriber: callback,
+      subscribersCount: subscribers.size,
     });
 
     return unsubscriber;
@@ -237,9 +246,18 @@ export class BufferNode<EVENTS extends EventLike>
   off = (type: string, callback: AnyFunction) => {
     if (this.isDestroyed) return;
 
-    const subscriber = this.__subscribers.get(type)?.get(callback);
+    const subscribers = this.__subscribers.get(type);
+
+    const subscriber = subscribers?.get(callback);
     if (subscriber) {
       subscriber.unsubscriber();
+
+      LifecycleFabric.send(this, 'unsubscribe', {
+        event: type,
+        mode: subscriber.mode,
+        subscriber: callback,
+        subscribersCount: subscribers?.size ?? 0,
+      });
     }
   };
 
@@ -252,12 +270,8 @@ export class BufferNode<EVENTS extends EventLike>
       this.__destroyUnsubscriber = undefined;
     }
 
-    const lifecycle = LIFECYCLE_WEAK_MAP.get(this);
-    if (lifecycle) {
-      lifecycle.send('destroy', undefined);
-      lifecycle.destroy();
-    }
-    LIFECYCLE_WEAK_MAP.delete(this);
+    LifecycleFabric.send(this, 'destroy', undefined);
+    LifecycleFabric.delete(this);
 
     for (const subscriber of this.__subscribers) {
       for (const typeSubscribers of subscriber[1]) {

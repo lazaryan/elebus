@@ -1,7 +1,4 @@
-export {
-  type TransportRootBase,
-  type TransportLifecycleEvents,
-} from './rootTypes';
+export { type TransportRootBase } from './rootTypes';
 export { type TransportNodeBase } from './nodeTypes';
 export type { EventLike, Unsubscriber, TransportRootNodes } from './types';
 export type {
@@ -28,3 +25,4 @@ export {
   type TransportRoot,
   type TransportReadonlyNode,
 } from './transport';
+export { type TransportLifecycleEvents } from './lifecycles';
